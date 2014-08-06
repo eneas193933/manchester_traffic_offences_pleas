@@ -1609,7 +1609,7 @@ input, select {
   margin: 0; }
 
 input#name {
-  width: 32%; }
+  width: 41%; }
 
 select {
   border-color: #bfc1c3; }
@@ -1704,10 +1704,22 @@ table th.header {
   display: inline;
   font-weight: normal; }
 
+/*label[for=id_understand] {font-weight: normal; font-size: 1em; white-space: nowrap;}
+.charge-section {margin-bottom: 1.5em;}*/
+.charge-section .form-hint {
+  display: inline; }
+
+.charge-section span.form-hint.datefield-hint {
+  font-size: 0.8em;
+  font-weight: normal; }
+
+label.select-plea.block-label {
+  font-size: 1.1em; }
+
 label[for=id_understand] {
   font-weight: normal;
   font-size: 1em;
-  white-space: nowrap; }
+  margin-bottom: 3.5em; }
 
 label[for=id_understand] strong {
   font-weight: bold; }
@@ -1761,3 +1773,51 @@ p.lead {
   margin-left: auto;
   margin-right: auto;
   margin-bottom: 2em; }
+
+#wrapper.service header.page-header div h1 {
+  padding: 20px 0px 0px 7px; }
+
+@media only screen and (min-width: 320px) and (max-width: 780px) {
+  #wrapper.service header.page-header h1 {
+    padding: 20px 0px 0px 7px; }
+
+  .article-container {
+    margin-right: 0; }
+
+  .inner {
+    padding: 0 0.5em; }
+
+  form.pleaform input#name {
+    width: 70%; }
+
+  section#group-urn {
+    width: 100%; }
+
+  section#group-urn #enter-urn {
+    width: 100%; }
+
+  section#group-urn #urn-loc {
+    float: none;
+    width: 100%; }
+
+  /*section#group-urn #urn-loc img {width:80%;}*/
+  section#group-urn #enter-urn #id_urn_0, section#group-urn #enter-urn #id_urn_1, section#group-urn #enter-urn #id_urn_2, section#group-urn #enter-urn #id_urn_3 {
+    margin: 0 2px;
+    width: 14%; }
+
+  input#id_date_of_hearing_day, input#id_date_of_hearing_month, input#id_date_of_hearing_year {
+    width: 15%; }
+
+  section#charges {
+    clear: both;
+    width: auto; }
+
+  section#charges #enter-charges {
+    width: auto;
+    float: none; }
+
+  section#charges #charge-loc {
+    float: none; }
+
+  .inner {
+    padding: 0; } }
