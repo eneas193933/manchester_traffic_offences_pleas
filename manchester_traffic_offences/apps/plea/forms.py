@@ -55,6 +55,12 @@ def is_valid_urn_format(urn):
     return True
 
 
+def is_date_in_future(date):
+    print date.date(), datetime.datetime.today().date()
+    if date.date() <= datetime.datetime.today().date():
+        raise exceptions.ValidationError(ERROR_MESSAGES["HEARING_DATE_PASSED"])
+
+
 class DSRadioFieldRenderer(RadioFieldRenderer):
     def render(self):
         """
@@ -208,6 +214,7 @@ class CaseForm(BasePleaStepForm):
     urn = URNField(required=True, help_text="On page 1 of the pack, in the top right corner",
                    error_messages={"required": ERROR_MESSAGES["URN_REQUIRED"]})
     date_of_hearing = forms.DateTimeField(widget=HearingDateTimeWidget(),
+                                          validators=[is_date_in_future],
                                           help_text="On page 1 of the pack, near the top on the left<br>For example, 30/07/2014",
                                           error_messages={"required": ERROR_MESSAGES["HEARING_DATE_REQUIRED"],
                                                           "invalid": ERROR_MESSAGES["HEARING_DATE_INVALID"]})
