@@ -211,6 +211,10 @@ class Case(models.Model):
     transferred to an encrypted S3 account.
     """
 
+    created_by_libra = models.BooleanField(default=False)
+
+    court = models.ForeignKey("Court", null=True, blank=True)
+
     urn = models.CharField(max_length=16, db_index=True)
     name = models.CharField(max_length=255, null=True, blank=True)
 
@@ -218,6 +222,18 @@ class Case(models.Model):
     status_info = models.TextField(null=True, blank=True)
 
     objects = CaseManager()
+
+
+class Offence(models.Model):
+    """
+    Offence data supplied by Libra
+    """
+
+    case = models.ForeignKey("Case")
+    offence_code = models.CharField(blank=True, null=True, max_length=10)
+    offence_title = models.CharField(blank=True, null=True, max_length=100)
+    offence_wording = models.TextField()
+    offence_sequence_number = models.CharField(blank=True, null=True, max_length=10)
 
 
 class UsageStatsManager(models.Manager):
@@ -310,6 +326,7 @@ class CourtManager(models.Manager):
 
 
 class Court(models.Model):
+
     court_code = models.CharField(
         max_length=100, null=True, blank=True)
 
