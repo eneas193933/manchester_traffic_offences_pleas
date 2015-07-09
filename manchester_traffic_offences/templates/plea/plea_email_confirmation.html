@@ -221,6 +221,8 @@
                                 {% if plea_type == "mixed" %}
                                     {% add_test_tag "<<MIXED>>" %}
                                 {% endif %}
+
+                                {{ plea_made_by }} | {{ plea_type }} | {{ number_of_charges }}
                                 
                                 {% if plea_made_by == "Defendant" %}
                                     
