@@ -183,6 +183,7 @@ INSTALLED_APPS = [
     'apps.plea',
     'apps.feedback',
     'apps.receipt',
+    'apps.state_forms'
 ]
 
 INSTALLED_APPS
