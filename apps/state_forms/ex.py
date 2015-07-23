@@ -42,6 +42,6 @@ class VerificationError(Exception):
 
     def __str__(self):
         if self.states:
-            return "%s %s" % (self.message, self.states)
+            return "{}:\n    {}".format(self.message, "\n    ".join(self.states))
         else:
             return self.message

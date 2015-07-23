@@ -1,8 +1,13 @@
 from collections import OrderedDict
 from copy import deepcopy
+from operator import eq
+import re
 
 from states import BaseState
-import ex
+from . import ex
+
+
+RE_STATE_CONDITION = re.compile('(.*)\[(.*)\]')
 
 
 def get_declared_states(bases, attrs, with_base_states=True):
@@ -26,8 +31,7 @@ def get_declared_states(bases, attrs, with_base_states=True):
 
     # If this class is subclassing another StateMachine, add that
     # Note that we loop over the bases in *reverse*. This is necessary in
-    # order to preserve the correct order of statess.
-    # order of statess.
+    # order to preserve the correct order of states.
     if with_base_states:
         for base in bases:
             if hasattr(base, 'base_states'):
@@ -59,23 +63,22 @@ class DeclarativeStatesMetaclass(type):
 
 class BaseFSM(object):
     """
-    Simple FSM implementation. Takes a declarative approach to
-    defining states, and their interactions and capabilities.
-
-
+    Simple FSM implementation with a declarative approach in-keeping with
+    the Django style.
     """
-    def __init__(self, verify_on_execute=True):
+    def __init__(self, verify_on_execute=True, initial_state=None):
         self.states = deepcopy(self.base_states)
+
         try:
             self.__state = self.states.keys()[0]
         except IndexError:
             self.__state = ''
+
         self.dbg = None
         self.verify_on_execute = verify_on_execute
 
-        for s in self.states.values():
-            if '*' in s.exit_states:
-                s.exit_states = [key for key in self.states.keys() if key != s.name]
+        if initial_state is not None:
+            self.set_initial_state(initial_state)
 
     def __unicode__(self):
         return self.__state
@@ -86,13 +89,12 @@ class BaseFSM(object):
 
     def setstate(self, value):
         raise ex.TransitionNotAllowed("State is read only, use change() instead.")
+
     state = property(getstate, setstate)
 
     def set_initial_state(self, state):
         """
-        Sets the initial state of the FSM, should only be used when
-        restoring a FSM into a state that has been previously attained
-        from the initial state.
+        Sets the initial state
         """
         if state in self.states:
             self.__state = state
@@ -115,13 +117,14 @@ class BaseFSM(object):
         """
         bad_states = []
         state_names = set(self.states.keys())
+
         for state in self.states.values():
             bad_states.extend(set(state.exit_states) - state_names)
 
         if len(bad_states):
             raise ex.VerificationError("Invalid exit state(s)", bad_states)
 
-    def change(self, new_state, *args, **kwargs):
+    def change(self, new_state=None, *args, **kwargs):
         """
         Transitions the machine to its new state, assuming it is a
         valid exit state and that entry and exit functions allow it.
@@ -129,15 +132,19 @@ class BaseFSM(object):
         All provided arguments are passed to the relevant exit and entry
         functions as well as the current state.
         """
+
+        if new_state is None:
+            pass
+
         if self.verify_on_execute:
             self.verify()
 
-        if not new_state in self.states:
+        if new_state not in self.states:
             raise ex.StateDoesNotExist(new_state)
 
         exiting_state = self.state
 
-        if not new_state in exiting_state.exit_states:
+        if new_state not in exiting_state.exit_states:
             raise ex.TransitionNotAllowed("%s -> %s" % (exiting_state.name, new_state))
 
         entering_state = self.states[new_state]
@@ -166,3 +173,58 @@ class BaseFSM(object):
 
 class FSM(BaseFSM):
     __metaclass__ = DeclarativeStatesMetaclass
+
+
+class ConditionalFSM(BaseFSM):
+    __metaclass__ = DeclarativeStatesMetaclass
+
+    def __init__(self, state_data, *args, **kwargs):
+        super(ConditionalFSM, self).__init__(*args, **kwargs)
+
+        def make_condition(operator, operands):
+            c = [operator, ] + operands
+            return c
+
+        self.state_data = state_data
+
+        self.exit_state_conditions = {}
+        for name, state in self.states.items():
+            for idx, exit_state in enumerate(state.exit_states):
+                matches = RE_STATE_CONDITION.match(exit_state)
+                if matches is not None:
+                    e_state, condition = matches.groups()
+                    state.exit_states[idx] = e_state
+
+                    if "=" in condition:
+                        terms = make_condition("eq", condition.split("="))
+
+                    if state.name not in self.exit_state_conditions:
+                        self.exit_state_conditions[state.name] = [{e_state: terms}]
+                    else:
+                        self.exit_state_conditions[state.name].append({e_state: terms})
+
+    def move_to_next(self, quiet=False):
+        next_state = None
+
+        # Check if the data meets any of our conditions
+        for condition in self.exit_state_conditions.get(self.state.name, {}):
+            exit_state, [operator, op1, op2] = condition.items()[0]
+            data = self.state_data.get(self.state.name, {}).get(op1)
+            if operator == "eq" and eq(data, op2):
+                next_state = exit_state
+                break
+
+        # If the data doesn't meet any conditions choose the first unconditional
+        # exit state
+        if next_state is None:
+            conditional_states = [s.keys()[0] for s in self.exit_state_conditions.get(self.state.name, {})]
+            available_states = list(set(self.state.exit_states) - set(conditional_states))
+
+            if available_states:
+                next_state = available_states[0]
+
+        if next_state is not None:
+            self.change(next_state)
+
+
+
