@@ -59,3 +59,14 @@ class BaseState(object):
                     action(exited_state, *args, **kwargs)
             else:
                 self.entry_action(exited_state, *args, **kwargs)
+
+
+class StateWithData(BaseState):
+    form_class = None
+
+    def is_valid(self, local_data, all_data):
+        if self.form_class is not None:
+            self.form = self.form_class(local_data)
+            return self.form.is_valid()
+
+        return True

@@ -10,7 +10,7 @@ from . import ex
 RE_STATE_CONDITION = re.compile('(.*)\[(.*)\]')
 
 
-def get_declared_states(bases, attrs, with_base_states=True):
+def get_declared_states(bases, attrs, with_base_states=True, state_type=None):
     """
     *Taken pretty much verbatim from django.forms*
 
@@ -22,9 +22,15 @@ def get_declared_states(bases, attrs, with_base_states=True):
     used.
 
     """
-    states = [(state_name, attrs.pop(state_name))
-              for state_name, obj in attrs.items()
-              if isinstance(obj, BaseState)]
+    if state_type is None:
+        states = [(state_name, attrs.pop(state_name))
+                  for state_name, obj in attrs.items()
+                      if isinstance(obj, BaseState)]
+    else:
+        states = [(state_name, attrs.pop(state_name))
+                  for state_name, obj in attrs.items()
+                      if isinstance(obj, state_type)]
+
     for name, state in states:
         state.name = name
     states.sort(key=lambda x: x[1].creation_counter)
@@ -223,8 +229,14 @@ class ConditionalFSM(BaseFSM):
             if available_states:
                 next_state = available_states[0]
 
+        local_data = self.state_data.get(self.state.name, {})
+
+        if not self.state.is_valid(local_data, self.state_data):
+            return False
+
         if next_state is not None:
             self.change(next_state)
+            return True
 
 
 
