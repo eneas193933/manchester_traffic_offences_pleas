@@ -54,7 +54,6 @@ class StateMachineTestsWithData(TestCase):
     def test_start_at_the_start(self):
         m = TestMachine({})
         self.assertEqual(m.state.name, "start")
-        t = Form1a({})
 
     def test_what_happens_at_the_end(self):
         m = TestMachine({"start": {},

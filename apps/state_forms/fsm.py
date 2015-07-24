@@ -232,6 +232,7 @@ class ConditionalFSM(BaseFSM):
         local_data = self.state_data.get(self.state.name, {})
 
         if not self.state.is_valid(local_data, self.state_data):
+            print self.state.form.errors
             return False
 
         if next_state is not None:
