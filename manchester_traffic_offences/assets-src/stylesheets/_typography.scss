@@ -42,6 +42,35 @@ ul {
 }
 ol {
   @extend .list-number;
+
+  &.list-number-bold {
+    li {
+      list-style: none;
+      counter-increment: item;
+
+      &:before {
+        content: counter(item) ".";
+        display: inline-block;
+        @include bold-19();
+        margin-right: .5em;
+        margin-left: -1.5em;
+        width: 1em;
+        text-align: right;
+      }
+    }
+
+    @include ie-lte(7) {
+      padding-left: 2em;
+
+      li {
+        list-style-type: decimal;
+
+        &:before {
+          display: none;
+        }
+      }
+    }
+  }
 }
 
 @include ie-lte(7) {

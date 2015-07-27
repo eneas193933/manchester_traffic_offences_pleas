@@ -1,6 +1,7 @@
 import sys
 import os
 from os.path import join, abspath, dirname
+import logging
 
 from django.utils.translation import ugettext_lazy as _
 
@@ -112,6 +113,13 @@ STATICFILES_FINDERS = (
     'django.contrib.staticfiles.finders.AppDirectoriesFinder',
 )
 
+# Options for Premailer, which inlines the CSS on the fly in email templates and
+# makes all URLs absolute
+PREMAILER_OPTIONS = {"base_url": "https://www.makeaplea.justice.gov.uk",
+                     "remove_classes": False,
+                     "keep_style_tags": True,
+                     "cssutils_logging_level": logging.ERROR}
+
 # Make this unique, and don't share it with anybody.
 SECRET_KEY = os.environ.get("SECRET_KEY", "")
 
@@ -144,6 +152,8 @@ SESSION_EXPIRE_AT_BROWSER_CLOSE = True
 SESSION_COOKIE_AGE = 3600
 
 RATE_LIMIT = "20/m"
+
+WAFFLE_CACHE_PREFIX = "MaP_waffle"
 
 # Python dotted path to the WSGI application used by Django's runserver.
 WSGI_APPLICATION = 'manchester_traffic_offences.wsgi.application'
@@ -184,6 +194,7 @@ INSTALLED_APPS = [
     'apps.feedback',
     'apps.receipt',
     'apps.state_forms'
+    'django_premailer',
 ]
 
 INSTALLED_APPS
