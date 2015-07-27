@@ -19,7 +19,7 @@ class StateMachineTestsWithData(TestCase):
             enabled=True,
             test_mode=False)
 
-    def good_case_data(self, override=None):
+    def get_good_case_data(self, override=None):
         hearing_date = datetime.date.today()+datetime.timedelta(30)
         case_data = {"date_of_hearing_0": str(hearing_date.day),
                      "date_of_hearing_1": str(hearing_date.month),
@@ -38,11 +38,11 @@ class StateMachineTestsWithData(TestCase):
         self.assertEqual(m.state.name, "case_stage")
 
     def test_use_defendant_path(self):
-        m = PleaStates(state_data={"case_stage": self.good_case_data()})
+        m = PleaStates(state_data={"case_stage": self.get_good_case_data()})
         m.move_to_next()
         self.assertEqual(m.state.name, "defendant_details")
 
     def test_use_company_path(self):
-        m = PleaStates(state_data={"case_stage": self.good_case_data({"plea_made_by": "Company representative"})})
+        m = PleaStates(state_data={"case_stage": self.get_good_case_data({"plea_made_by": "Company representative"})})
         m.move_to_next()
         self.assertEqual(m.state.name, "company_details")

@@ -63,10 +63,31 @@ class BaseState(object):
 
 class StateWithData(BaseState):
     form_class = None
+    template = None
 
-    def is_valid(self, local_data, all_data):
+    def __init__(self, *args, **kwargs):
+        super(StateWithData, self).__init__(*args, **kwargs)
+        self._loaded = False
+
+    def _all_data(self):
+        return self.all_data.get(self.name, )
+
+    def load(self, all_data):
+        self.all_data = all_data
         if self.form_class is not None:
-            self.form = self.form_class(local_data)
-            return self.form.is_valid()
+            if self.name in all_data:
+                self.form = self.form_class(all_data[self.name])
+            else:
+                self.form = self.form_class()
+        else:
+            self.form = None
 
-        return True
+        self._loaded = True
+
+    def save(self):
+        if not self._loaded:
+            raise Exception("State not loaded when attempting save")
+
+        if self.form is not None and self.form.is_valid():
+            self.all_data[self.name] = self.form.cleaned_data
+            return self.all_data

@@ -1,21 +1,20 @@
 from django.utils.decorators import method_decorator
+from django.template import RequestContext, loader
 from django.views.decorators.cache import never_cache
-from django.views.generic import TemplateView, FormView
+from django.http import HttpResponse
 
 from form_states import PleaStates
 
-
-class StateViews(TemplateView):
-    @method_decorator(never_cache)
-    def dispatch(self, *args, **kwargs):
-        return super(StateViews, self).dispatch(*args, **kwargs)
-
-    def get(self, request, stage=None):
-        if not stage:
+@never_cache
+def state_view(request, stage=None):
+    if stage is None:
             stage = "case_stage"
 
-        data = request.session["state_data"]
+    data = request.session.get("state_data", {})
+    plea = PleaStates(state_data=data)
+    data["form"] = plea.state.form
+    ctxt = RequestContext(request, data)
+    template = loader.get_template(plea.state.template)
 
-        p = PleaStates(state_data=data)
+    return HttpResponse(template.render(ctxt))
 
-        p.render()

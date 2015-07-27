@@ -209,6 +209,8 @@ class ConditionalFSM(BaseFSM):
                     else:
                         self.exit_state_conditions[state.name].append({e_state: terms})
 
+        self.state.load(self.state_data)
+
     def move_to_next(self, quiet=False):
         next_state = None
 
@@ -229,15 +231,16 @@ class ConditionalFSM(BaseFSM):
             if available_states:
                 next_state = available_states[0]
 
-        local_data = self.state_data.get(self.state.name, {})
-
-        if not self.state.is_valid(local_data, self.state_data):
-            print self.state.form.errors
-            return False
 
         if next_state is not None:
+            self.state.load(self.state_data)
+            updated_state_data = self.state.save()
+
             self.change(next_state)
+
+            if updated_state_data is not None:
+                self.state_data = updated_state_data
+            else:
+                return False
+
             return True
-
-
-
