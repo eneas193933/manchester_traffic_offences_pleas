@@ -193,11 +193,9 @@ INSTALLED_APPS = [
     'apps.plea',
     'apps.feedback',
     'apps.receipt',
-    'apps.state_forms'
+    'apps.state_forms',
     'django_premailer',
 ]
-
-INSTALLED_APPS
 
 # A sample logging configuration. The only tangible logging
 # performed by this configuration is to send an email to
