@@ -12,6 +12,8 @@ def state_view(request, stage=None):
 
     data = request.session.get("state_data", {})
     plea = PleaStates(state_data=data)
+
+
     data["form"] = plea.state.form
     ctxt = RequestContext(request, data)
     template = loader.get_template(plea.state.template)

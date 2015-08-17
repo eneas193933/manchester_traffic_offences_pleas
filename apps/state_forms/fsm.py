@@ -211,7 +211,22 @@ class ConditionalFSM(BaseFSM):
 
         self.state.load(self.state_data)
 
-    def move_to_next(self, quiet=False):
+    def invalidate_data(self):
+        for key, value in self.state_data.items():
+            value["valid"] = False
+
+    def move_to_best(self):
+        """
+        Starts at the beginning of the journey and
+        :return:
+        """
+        self.__BaseFSM__state = self.states[0]
+        self.invalidate_data()
+
+        while(self.move_to_next()):
+            pass
+
+    def move_to_next(self):
         next_state = None
 
         # Check if the data meets any of our conditions
