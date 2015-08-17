@@ -6,11 +6,15 @@ from django.forms.widgets import Textarea, RadioSelect
 from django.conf import settings
 from django.utils.translation import ugettext_lazy as _
 
-from .fields import (ERROR_MESSAGES, is_date_in_past, is_date_in_future, is_date_within_range,
+from .validators import (is_date_in_past,
+                         is_date_in_future,
+                         is_date_within_range,
+                         is_urn_not_used,
+                         is_urn_valid)
+
+from .fields import (ERROR_MESSAGES,
                      DSRadioFieldRenderer,
-                     DSStackedRadioFieldRenderer,
-                     URNField,
-                     DateWidget, is_urn_not_used, is_urn_valid)
+                     DateWidget)
 
 YESNO_CHOICES = (
     (True, _("Yes")),
@@ -97,13 +101,14 @@ class CaseForm(BasePleaStepForm):
         ("Defendant", _("The person named in the requisition pack")),
         ("Company representative", _("Pleading on behalf of a company")))
 
-    urn = URNField(label=_("Unique reference number (URN)"),
-                   required=True,
-                   validators=[is_urn_valid, is_urn_not_used],
-                   help_text=_("On page 1 of the requisition pack, in the top right corner.<br>For example, 12/AB/34567/00"),
-                   error_messages={"required": ERROR_MESSAGES["URN_REQUIRED"],
-                                   "is_urn_valid": ERROR_MESSAGES["URN_INVALID"],
-                                   "is_urn_not_used": ERROR_MESSAGES['URN_ALREADY_USED']})
+    urn = forms.CharField(widget=forms.TextInput(attrs={"class": "form-control"}),
+                          label=_("Unique reference number (URN)"),
+                          required=True,
+                          validators=[is_urn_valid, is_urn_not_used],
+                          help_text=_("On page 1 of the requisition pack, in the top right corner.<br>For example, 12/AB/34567/00"),
+                          error_messages={"required": ERROR_MESSAGES["URN_REQUIRED"],
+                                          "is_urn_valid": ERROR_MESSAGES["URN_INVALID"],
+                                          "is_urn_not_used": ERROR_MESSAGES['URN_ALREADY_USED']})
 
     date_of_hearing = forms.DateField(widget=DateWidget,
                                       validators=[is_date_in_future, is_date_within_range],
@@ -123,7 +128,7 @@ class CaseForm(BasePleaStepForm):
                                            min_value=1, max_value=10,
                                            error_messages={"required": ERROR_MESSAGES["NUMBER_OF_CHARGES_REQUIRED"]})
 
-    plea_made_by = forms.TypedChoiceField(required=True, widget=RadioSelect(renderer=DSStackedRadioFieldRenderer),
+    plea_made_by = forms.TypedChoiceField(required=True, widget=RadioSelect(renderer=DSRadioFieldRenderer),
                                           choices=PLEA_MADE_BY_CHOICES,
                                           label=_("Are you?"),
                                           help_text=_("Choose one of the following options:"),
@@ -238,7 +243,7 @@ class CompanyDetailsForm(BasePleaStepForm):
 
     position_in_company = forms.ChoiceField(label=_("Your position in the company"),
                                             choices=COMPANY_POSITION_CHOICES,
-                                            widget=RadioSelect(renderer=DSStackedRadioFieldRenderer),
+                                            widget=RadioSelect(renderer=DSRadioFieldRenderer),
                                             required=True,
                                             error_messages={"required": ERROR_MESSAGES["POSITION_REQUIRED"]})
 
@@ -320,10 +325,10 @@ class YourMoneyForm(SplitPleaStepForm):
     }
 
     you_are = forms.ChoiceField(label=_("Are you?"), choices=YOU_ARE_CHOICES,
-                                widget=forms.RadioSelect(renderer=DSStackedRadioFieldRenderer),
+                                widget=forms.RadioSelect(renderer=DSRadioFieldRenderer),
                                 error_messages={"required": ERROR_MESSAGES["YOU_ARE_REQUIRED"]})
     # Employed
-    employed_take_home_pay_period = forms.ChoiceField(widget=RadioSelect(renderer=DSStackedRadioFieldRenderer),
+    employed_take_home_pay_period = forms.ChoiceField(widget=RadioSelect(renderer=DSRadioFieldRenderer),
                                                       choices=PERIOD_CHOICES,
                                                       label=_("How often do you get paid?"),
                                                       error_messages={"required": ERROR_MESSAGES["PAY_PERIOD_REQUIRED"],
@@ -347,7 +352,7 @@ class YourMoneyForm(SplitPleaStepForm):
                                                error_messages={"required": ERROR_MESSAGES["HARDSHIP_REQUIRED"]})
 
     # Self-employed
-    self_employed_pay_period = forms.ChoiceField(widget=RadioSelect(renderer=DSStackedRadioFieldRenderer),
+    self_employed_pay_period = forms.ChoiceField(widget=RadioSelect(renderer=DSRadioFieldRenderer),
                                                  choices=SE_PERIOD_CHOICES,
                                                  label=_("How often do you get paid?"),
                                                  error_messages={"required": ERROR_MESSAGES["PAY_PERIOD_REQUIRED"],
@@ -389,7 +394,7 @@ class YourMoneyForm(SplitPleaStepForm):
                                             label=_("Does this include payment for dependants?"),
                                             error_messages={"required": ERROR_MESSAGES["BENEFITS_DEPENDANTS_REQUIRED"]})
 
-    benefits_period = forms.ChoiceField(widget=RadioSelect(renderer=DSStackedRadioFieldRenderer),
+    benefits_period = forms.ChoiceField(widget=RadioSelect(renderer=DSRadioFieldRenderer),
                                         choices=BEN_PERIOD_CHOICES,
                                         label=_("How often are your benefits paid?"),
                                         error_messages={"required": ERROR_MESSAGES["PAY_PERIOD_REQUIRED"],
@@ -494,9 +499,9 @@ class YourExpensesForm(BasePleaStepForm):
         label=_("Council tax"),
         widget=forms.TextInput(attrs={"pattern": "[0-9]*",
                                       "class": "form-control-inline"}),
-        error_messages={'required': ERROR_MESSAGES['HOUSEHOLD_INSURANCE_REQUIRED'],
-                        'invalid': ERROR_MESSAGES['HOUSEHOLD_INSURANCE_INVALID'],
-                        'min_value': ERROR_MESSAGES['HOUSEHOLD_INSURANCE_MIN']})
+        error_messages={'required': ERROR_MESSAGES['HOUSEHOLD_COUNCIL_TAX_REQUIRED'],
+                        'invalid': ERROR_MESSAGES['HOUSEHOLD_COUNCIL_TAX_INVALID'],
+                        'min_value': ERROR_MESSAGES['HOUSEHOLD_COUNCIL_TAX_MIN']})
 
     other_bill_payers = forms.TypedChoiceField(
         widget=RadioSelect(renderer=DSRadioFieldRenderer),
@@ -633,13 +638,16 @@ class CompanyFinancesForm(SplitPleaStepForm):
                                       localize=True,
                                       error_messages={"required": ERROR_MESSAGES["COMPANY_NET_TURNOVER"]})
 
+
     def __init__(self, *args, **kwargs):
         super(CompanyFinancesForm, self).__init__(*args, **kwargs)
 
-        if "trading_period" in self.data:
-            if self.data["trading_period"] == "False":
-                self.fields["gross_turnover"].error_messages.update({"required": ERROR_MESSAGES["COMPANY_GROSS_TURNOVER_PROJECTED"]})
-                self.fields["net_turnover"].error_messages.update({"required": ERROR_MESSAGES["COMPANY_NET_TURNOVER_PROJECTED"]})
+        if self.data.get("trading_period") == "False":
+            self.fields["gross_turnover"].error_messages.update({"required": ERROR_MESSAGES["COMPANY_GROSS_TURNOVER_PROJECTED"]})
+            self.fields["net_turnover"].error_messages.update({"required": ERROR_MESSAGES["COMPANY_NET_TURNOVER_PROJECTED"]})
+        else:
+            self.fields["gross_turnover"].error_messages.update({"required": ERROR_MESSAGES["COMPANY_GROSS_TURNOVER"]})
+            self.fields["net_turnover"].error_messages.update({"required": ERROR_MESSAGES["COMPANY_NET_TURNOVER"]})
 
 
 class ConfirmationForm(BasePleaStepForm):
@@ -682,16 +690,10 @@ class PleaForm(SplitPleaStepForm):
 
 
 class CourtFinderForm(forms.Form):
-    urn = URNField(label=_("Unique reference number (URN)"),
-                   required=True,
-                   help_text=_("On page 1 of the pack, in the top right corner.<br>For example, 12/AB/34567/00"),
-                   error_messages={"required": ERROR_MESSAGES["URN_REQUIRED"]})
-
-    def clean_urn(self):
-        urn = self.cleaned_data["urn"]
-
-        try:
-            is_urn_valid(urn)
-        except forms.ValidationError:
-            raise forms.ValidationError("You've entered incorrect details")
-        return urn
+    urn = forms.CharField(widget=forms.TextInput(attrs={"class": "form-control"}),
+                          label=_("Unique reference number (URN)"),
+                          required=True,
+                          validators=[is_urn_valid],
+                          help_text=_("On page 1 of the pack, in the top right corner.<br>For example, 12/AB/34567/00"),
+                          error_messages={"required": ERROR_MESSAGES["URN_REQUIRED"],
+                                          "is_urn_valid": ERROR_MESSAGES["URN_INCORRECT"]})

@@ -15,6 +15,7 @@ from forms import (CaseForm, YourDetailsForm, CompanyDetailsForm,
 
 from .fields import ERROR_MESSAGES
 from .models import Court, Case, Offence
+from .standardisers import standardise_urn, slashify_urn
 
 
 def get_plea_type(context_data):
@@ -44,7 +45,7 @@ def get_case(urn):
 
 class CaseStage(FormStage):
     name = "case"
-    template = "plea/case.html"
+    template = "case.html"
     form_class = CaseForm
     dependencies = []
 
@@ -53,8 +54,7 @@ class CaseStage(FormStage):
             self.context['urn_already_used'] = True
 
             try:
-                self.context["court"] = Court.objects.get_by_urn(
-                    self.form.data['urn_0'])
+                self.context["court"] = Court.objects.get_by_urn(self.form.data['urn'])
             except Court.DoesNotExist:
                 pass
 
@@ -62,6 +62,9 @@ class CaseStage(FormStage):
 
     def save(self, form_data, next_step=None):
         clean_data = super(CaseStage, self).save(form_data, next_step)
+
+        if "urn" in clean_data:
+            clean_data["urn"] = slashify_urn(standardise_urn(clean_data["urn"]))
 
         if 'complete' in clean_data:
             if clean_data.get("plea_made_by", "Defendant") == "Defendant":
@@ -74,7 +77,7 @@ class CaseStage(FormStage):
 
 class CompanyDetailsStage(FormStage):
     name = "company_details"
-    template = "plea/company_details.html"
+    template = "company_details.html"
     form_class = CompanyDetailsForm
     dependencies = ["case"]
 
@@ -91,7 +94,7 @@ class CompanyDetailsStage(FormStage):
 
 class YourDetailsStage(FormStage):
     name = "your_details"
-    template = "plea/your_details.html"
+    template = "your_details.html"
     form_class = YourDetailsForm
     dependencies = ["case"]
 
@@ -108,7 +111,7 @@ class YourDetailsStage(FormStage):
 
 class PleaStage(FormStage):
     name = "plea"
-    template = "plea/plea.html"
+    template = "plea.html"
     form_class = PleaForm
     dependencies = ["case", "your_details", "company_details"]
 
@@ -234,14 +237,14 @@ class PleaStage(FormStage):
 
 class CompanyFinancesStage(FormStage):
     name = "company_finances"
-    template = "plea/company_finances.html"
+    template = "company_finances.html"
     form_class = CompanyFinancesForm
     dependencies = ["case"]
 
 
 class YourMoneyStage(FormStage):
     name = "your_finances"
-    template = "plea/your_finances.html"
+    template = "your_finances.html"
     form_class = YourMoneyForm
     dependencies = ["case", "your_details", "plea"]
 
@@ -267,7 +270,7 @@ class YourMoneyStage(FormStage):
 
 class YourExpensesStage(FormStage):
     name = "your_expenses"
-    template = "plea/your_expenses.html"
+    template = "your_expenses.html"
     form_class = YourExpensesForm
     dependencies = ["case", "your_details", "plea", "your_finances"]
 
@@ -304,7 +307,7 @@ class YourExpensesStage(FormStage):
 
 class ReviewStage(FormStage):
     name = "review"
-    template = "plea/review.html"
+    template = "review.html"
     form_class = ConfirmationForm
     dependencies = ["case", "company_details", "your_details", "plea",
                     "your_finances", "company_finances"]
@@ -338,7 +341,7 @@ class ReviewStage(FormStage):
 
 class CompleteStage(FormStage):
     name = "complete"
-    template = "plea/complete.html"
+    template = "complete.html"
     form_class = None
     dependencies = ["case", "your_details", "company_details", "plea",
                     "your_finances", "company_finances", "review"]

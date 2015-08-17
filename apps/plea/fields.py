@@ -1,6 +1,5 @@
 from dateutil.parser import parse
 import datetime
-import re
 import six
 
 from django.conf import settings
@@ -20,6 +19,7 @@ ERROR_MESSAGES = {
     "URN_REQUIRED": _("Enter your unique reference number (URN)"),
     "URN_INVALID": _("The unique reference number (URN) isn't valid. Enter the number exactly as it appears on page 1 of the pack"),
     "URN_ALREADY_USED": _("Enter the correct URN"),
+    "URN_INCORRECT": _("You've entered incorrect details"),
     "HEARING_DATE_REQUIRED": _("Provide a court hearing date"),
     "HEARING_DATE_INVALID": _("The court hearing date isn't a valid format"),
     "HEARING_DATE_PASSED": _("The court hearing date must be after today"),
@@ -96,72 +96,6 @@ ERROR_MESSAGES = {
 }
 
 
-def is_urn_valid(urn):
-    """
-    URN is 11 or 13 characters long in the following format:
-
-    00/AA/0000000/00
-    or
-    00/AA/00000/00
-    """
-
-    pattern = r"[0-9]{2}/[a-zA-Z]{2}/(?:[0-9]{5}|[0-9]{7})/[0-9]{2}"
-
-    if not re.match(pattern, urn) or not Court.objects.has_court(urn):
-        raise exceptions.ValidationError("The URN is not valid", code="is_urn_valid")
-
-    court = Court.objects.get_by_urn(urn)
-    if court.validate_urn and not Case.objects.filter(urn__iexact=urn, sent=False).exists():
-        raise exceptions.ValidationError(_(ERROR_MESSAGES["URN_INVALID"]))
-
-    return True
-
-
-def is_date_in_past(date):
-    if date >= datetime.datetime.today().date():
-        raise exceptions.ValidationError("The date must be in the past", code="is_date_in_past")
-
-    return True
-
-def is_date_in_future(date):
-    if date <= datetime.datetime.today().date():
-        raise exceptions.ValidationError("The date must be in the future", code="is_date_in_future")
-
-    return True
-
-
-def is_date_within_range(date):
-    if date > datetime.datetime.today().date()+datetime.timedelta(178):
-        raise exceptions.ValidationError("The date must be within the next 6 months", code="is_date_within_range")
-
-    return True
-
-
-def is_urn_not_used(urn):
-    """
-    Check that the urn hasn't already been used in a previous submission
-    """
-
-    if not Case.objects.can_use_urn(urn):
-        raise exceptions.ValidationError("The URN has already been used", code="is_urn_not_used")
-
-    return True
-
-
-class RadioFieldRenderer(RadioFieldRenderer):
-    def render(self):
-        """
-        Outputs a <ul> for this set of choice fields.
-        If an id was given to the field, it is applied to the <ul> (each
-        item in the list will get an id of `$id_$i`).
-        """
-        id_ = self.attrs.get('id', None)
-
-        context = {"id": id_, "renderer": self, "inputs": [force_text(widget) for widget in self]}
-
-        return render_to_string("widgets/RadioSelect.html", context)
-
-
 class DSRadioFieldRenderer(RadioFieldRenderer):
     def render(self):
         """
@@ -172,20 +106,7 @@ class DSRadioFieldRenderer(RadioFieldRenderer):
 
         context = {"id": id_, "renderer": self, "inputs": [force_text(widget) for widget in self]}
 
-        return render_to_string("widgets/DSRadioSelect.html", context)
-
-
-class DSStackedRadioFieldRenderer(RadioFieldRenderer):
-    def render(self):
-        """
-        Outputs a GOV.UK-styled <fieldset> for this set of choice fields.
-        Radio buttons stack on top of each other.
-        """
-        id_ = self.attrs.get('id', None)
-
-        context = {"id": id_, "renderer": self, "inputs": [force_text(widget) for widget in self]}
-
-        return render_to_string("widgets/DSStackedRadioSelect.html", context)
+        return render_to_string("widgets/partials/DSRadioSelect.html", context)
 
 
 class DSTemplateWidgetBase(forms.TextInput):
@@ -204,11 +125,7 @@ class DSTemplateWidgetBase(forms.TextInput):
 
 
 class DSDateTemplateWidget(DSTemplateWidgetBase):
-    template = "widgets/DSDateInputWidget.html"
-
-
-class DSURNTemplateWidget(DSTemplateWidgetBase):
-    template = "widgets/DSURNInputWidget.html"
+    template = "widgets/partials/DSDateInputWidget.html"
 
 
 class DateWidget(MultiWidget):
@@ -272,54 +189,4 @@ class DateWidget(MultiWidget):
             return [widget.value_from_datadict(data, files, name + "_%s" % i) for i, widget in enumerate(self.widgets)]
 
     def format_output(self, rendered_widgets):
-        return '/'.join(rendered_widgets)
-
-
-class URNWidget(MultiWidget):
-    def __init__(self, attrs=None):
-        widgets = [DSURNTemplateWidget(attrs={"pattern": "[0-9]*",
-                                              "maxlength": "2",
-                                              "size": "2",
-                                              "class": "form-control-urn-2",
-                                              "title": _("Part 1")}),
-                   DSURNTemplateWidget(attrs={"pattern": "[A-Z]*",
-                                              "maxlength": "2",
-                                              "size": "2",
-                                              "class": "form-control-urn-2",
-                                              "title": _("Part 2")}),
-                   DSURNTemplateWidget(attrs={"pattern": "[0-9]*",
-                                              "maxlength": "7",
-                                              "size": "7",
-                                              "class": "form-control-urn-7",
-                                              "title": _("Part 3")}),
-                   DSURNTemplateWidget(attrs={"pattern": "[0-9]*",
-                                              "maxlength": "2",
-                                              "size": "2",
-                                              "class": "form-control-urn-2",
-                                              "title": _("Part 4")}),
-                   ]
-        super(URNWidget, self).__init__(widgets, attrs)
-
-    def decompress(self, value):
-        if value:
-            return value.split('/')
-        else:
-            return ['', '', '', '']
-
-    def format_output(self, rendered_widgets):
-        return '/'.join(rendered_widgets)
-
-
-class URNField(forms.MultiValueField):
-    def __init__(self, *args, **kwargs):
-            list_fields = [forms.fields.CharField(max_length=2),
-                           forms.fields.CharField(max_length=2),
-                           forms.fields.CharField(max_length=7),
-                           forms.fields.CharField(max_length=2)]
-            super(URNField, self).__init__(list_fields, *args, **kwargs)
-
-    def compress(self, values):
-        return "/".join(values)
-
-    #default_validators = [is_urn_valid]
-    widget = URNWidget()
+        return " / ".join(rendered_widgets)

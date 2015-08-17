@@ -1,8 +1,9 @@
+from collections import Counter
 from dateutil.parser import parse as date_parse
 import datetime as dt
 
 from django.db import models
-from django.db.models import Sum, Count
+from django.db.models import Sum, Count, F
 
 
 STATUS_CHOICES = (("created_not_sent", "Created but not sent"),
@@ -13,7 +14,6 @@ STATUS_CHOICES = (("created_not_sent", "Created but not sent"),
 
 
 class CourtEmailCountManager(models.Manager):
-
     def calculate_aggregates(self, start_date, days=7):
         """
         Calculate aggregate stats (subs, guilty pleas, not guilty pleas) over the
@@ -55,47 +55,15 @@ class CourtEmailCountManager(models.Manager):
             }
 
         stats = {
-            'submissions': {
-
-            },
-            'pleas': {
-
-            }
+            'submissions': {},
+            'pleas': {}
         }
 
-        now = dt.datetime.now()
-
-        yesterday_filter = {
-            "date_sent__gte": dt.datetime.combine(now-dt.timedelta(1), dt.time.min),
-            "date_sent__lte": dt.datetime.combine(now-dt.timedelta(1), dt.time.max)
-        }
-
-        last_week_filter = {
-            "date_sent__gte": dt.datetime.combine(now-dt.timedelta(now.weekday()+7), dt.time.min),
-            "date_sent__lte": dt.datetime.combine(now-dt.timedelta(now.weekday()+1), dt.time.max)
-        }
-
-        to_date = self.all()
-        last_week = self.filter(**last_week_filter)
-        yesterday = self.filter(**yesterday_filter)
+        to_date = self.filter(sent=True, court__test_mode=False)
 
         stats['submissions']['to_date'] = to_date.count()
-        stats['submissions']['last_week'] = last_week.count()
-        stats['submissions']['yesterday'] = yesterday.count()
 
         stats['pleas']['to_date'] = _get_totals(to_date)
-        stats['pleas']['last_week'] = _get_totals(last_week)
-        stats['pleas']['yesterday'] = _get_totals(yesterday)
-
-        stats['additional'] = {}
-
-        stats['additional']['sc_field_completed'] = {}
-
-        stats['additional']['sc_field_completed']['guilty'] = \
-            to_date.filter(sc_guilty_char_count__gte=1).count()
-
-        stats['additional']['sc_field_completed']['not_guilty'] = \
-            to_date.filter(sc_not_guilty_char_count__gte=1).count()
 
         return stats
 
@@ -109,7 +77,9 @@ class CourtEmailCountManager(models.Manager):
             start_date = dt.date(2012,01,01)
 
         results = CourtEmailCount.objects\
-            .filter(hearing_date__gte=start_date)\
+            .filter(sent=True,
+                    hearing_date__gte=start_date,
+                    court__test_mode=False)\
             .extra({'hearing_day': "date(hearing_date)"})\
             .values('hearing_day')\
             .order_by('hearing_day')\
@@ -123,6 +93,43 @@ class CourtEmailCountManager(models.Manager):
 
         return results
 
+    def get_stats_by_court(self):
+        """
+        Return stats grouped by court
+        """
+        courts = Court.objects.filter(test_mode=False)
+
+        stats = []
+
+        for court in courts:
+
+            qs = self.filter(sent=True,
+                             court__id=court.id)
+
+            totals = qs.aggregate(Sum('total_pleas'), Sum('total_guilty'), Sum('total_not_guilty'))
+
+            data = {"court_name": court.court_name,
+                    "region_code": court.region_code,
+                    "submissions": qs.count(),
+                    "pleas": totals['total_pleas__sum'],
+                    "guilty": totals['total_guilty__sum'],
+                    "not_guilty": totals['total_not_guilty__sum']}
+
+            stats.append(data)
+
+        return stats
+
+    def get_stats_days_from_hearing(self, limit=60):
+        courts = Court.objects.filter(test_mode=False)
+
+        counts = CourtEmailCount.objects.filter(court__in=courts).annotate(num_days=F('hearing_date') - F('date_sent')).values('num_days').order_by("-num_days")
+        day_counts = Counter([x["num_days"].days for x in counts if x["num_days"].days < limit and x["num_days"].days > 0])
+
+        for day_number in range(limit):
+            if day_number not in day_counts.keys():
+                day_counts[day_number] = 0
+
+        return day_counts
 
 class CourtEmailCount(models.Model):
     date_sent = models.DateTimeField(auto_now_add=True)

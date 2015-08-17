@@ -1,0 +1,109 @@
+{% extends "base_form.html" %}
+
+{% load i18n %}
+{% load form_widgets %}
+{% load testing %}
+
+{% block page_title %}{% trans "Your expenses" %} - {{ block.super }}{% endblock %}
+
+
+{% block stage_header %}
+    <h1 class="heading-xlarge">{% trans "Your expenses" %}</h1>
+
+    <p class="lede">{% trans "To help the court decide your fine, you must provide information about your expenses." %}</p>
+{% endblock stage_header %}
+
+
+{% block stage_form %}
+    <hr>
+
+    {% std_field form.hardship_details wide=True %}
+
+    <div id="household_expenses">
+        <h2>{% trans "Household expenses" %}</h2>
+
+        <p>{% trans "What are your monthly household bills for the following?" %}</p>
+
+        <div class="grid-row">
+            <div class="column-half">
+                {% std_field form.household_accommodation hide_optional=True prefix="£" %}
+            </div>
+            <div class="column-half">
+                {% std_field form.household_utility_bills hide_optional=True prefix="£" %}
+            </div>
+        </div>
+
+        <div class="grid-row">
+            <div class="column-half">
+                {% std_field form.household_insurance hide_optional=True prefix="£" %}
+            </div>
+            <div class="column-half">
+                {% std_field form.household_council_tax hide_optional=True prefix="£" %}
+            </div>
+        </div>
+
+        {% radio_field form.other_bill_payers inline=True %}
+
+    </div>
+
+    <hr>
+
+
+    <div id="other_expenses">
+        <h2>{% trans "Other expenses" %}</h2>
+
+        <p>{% trans "What are your monthly bills for the following?" %}</p>
+
+        <div class="grid-row">
+            <div class="column-half">
+                {% std_field form.other_tv_subscription hide_optional=True prefix="£" %}
+            </div>
+            <div class="column-half">
+                {% std_field form.other_travel_expenses hide_optional=True prefix="£" %}
+            </div>
+        </div>
+
+        <div class="grid-row">
+            <div class="column-half">
+                {% std_field form.other_telephone hide_optional=True prefix="£" %}
+            </div>
+            <div class="column-half">
+                {% std_field form.other_loan_repayments hide_optional=True prefix="£" %}
+            </div>
+        </div>
+
+        <div class="grid-row">
+            <div class="column-half">
+                {% std_field form.other_court_payments hide_optional=True prefix="£" %}
+            </div>
+            <div class="column-half">
+                {% std_field form.other_child_maintenance hide_optional=True prefix="£" %}
+            </div>
+        </div>
+    </div>
+
+    <div class="nojs-hidden">
+        
+        <hr>
+
+        <h2 class="heading-large">{% trans "Totals" %}</h2>
+
+        <div class="form-group">
+            <table id="expense-summary">
+                <tr>
+                    <th>{% trans "Total household expenses" %}</th>
+                    <td>£<span class="js-CalculateTotals intermediate-total" data-total-terms="#household_expenses input[type=text]"></span></td>
+                </tr>
+                <tr>
+                    <th>{% trans "Total other expenses" %}</th>
+                    <td>£<span class="js-CalculateTotals intermediate-total" data-total-terms="#other_expenses input[type=text]"></span></td>
+                </tr>
+                <tr class="total">
+                    <th>{% trans "Total expenses" %}</th>
+                    <td>£<span class="js-CalculateTotals" data-total-terms=".intermediate-total"></span></td>
+                </tr>
+            </table>
+        </div>
+        
+    </div>
+{% endblock stage_form %}

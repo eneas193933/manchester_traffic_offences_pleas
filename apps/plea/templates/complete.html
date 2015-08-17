@@ -1,0 +1,92 @@
+{% extends "base.html" %}
+
+{% load i18n %}
+{% load testing %}
+
+{% block page_title %}{% blocktrans count charges=case.number_of_charges %}Your plea has been submitted{% plural %}Your pleas have been submitted{% endblocktrans %} - {{ block.super }}{% endblock %}
+
+{% block page_content %}
+
+    {% if plea_type == "guilty" %}
+        {% add_test_tag "<<GUILTY>>" %}
+    {% endif %}
+
+    {% if plea_type == "not_guilty" %}
+        {% add_test_tag "<<NOTGUILTY>>" %}
+    {% endif %}
+
+    {% if plea_type == "mixed" %}
+        {% add_test_tag "<<MIXED>>" %}
+    {% endif %}
+
+    <header class="success-header">
+        <h1 class="ticked">
+        {% if case.plea_made_by == "Defendant" %}
+            {% blocktrans count charges=case.number_of_charges %}Your plea has been sent to the court{% plural %}Your pleas have been sent to the court{% endblocktrans %}
+        {% elif case.plea_made_by == "Company representative" %}
+            {% blocktrans count charges=case.number_of_charges %}Company plea has been submitted{% plural %}Company pleas have been submitted{% endblocktrans %}
+        {% endif %}
+        </h1>
+    </header>
+
+    <section class="next-steps">
+
+        <h2 class="heading-medium">{% blocktrans %}What happens next:{% endblocktrans %}</h2>
+        <div class="panel-indent">
+            <ul>
+                <li>{% blocktrans count charges=case.number_of_charges %}we’ll send you a letter with the court’s decision within 3 working days after your hearing date{% plural %}we’ll send you a letter with the court’s decisions within 3 working days after your hearing date{% endblocktrans %}</li>
+                
+                {% if case.plea_made_by == "Defendant" %}
+                <li>{% blocktrans %}the court will tell you if you need to attend a trial, and what evidence you may need to send to the court in support of your case{% endblocktrans %}</li>        
+                {% endif %}
+
+                {% if case.plea_made_by == "Company representative" %}
+                <li>{% blocktrans %}the court will tell you if a company representative needs to attend a trial, and what evidence might be needed by the court{% endblocktrans %}</li>
+                {% endif %}
+
+                <li>{% blocktrans %}you can <a href="javascript:window.print();">print a copy</a> of this plea confirmation for your records{% endblocktrans %}</li>
+            </ul>
+        </div>
+
+
+        <h2 class="heading-medium">{% blocktrans %}Do not:{% endblocktrans %}</h2>
+        <div class="panel-indent">
+            <ul>
+                <li>{% blocktrans %}come to court on the hearing date shown in the requisition pack{% endblocktrans %}</li>
+                
+                {% if case.plea_made_by == "Defendant" and plea_type != "not_guilty" %}
+                <li>{% blocktrans %}send your driving licence to the court, the DVLA will contact you if they need you to send it to them{% endblocktrans %}</li>
+                {% endif %}
+            </ul>
+        </div>
+
+        <h2 class="heading-medium">{% blocktrans %}Need to change a plea?{% endblocktrans %}</h2>
+
+        <p>{% blocktrans with urn=case.urn|upper %}Contact the court by post or email quoting your URN {{ urn }} before the date of your hearing.{% endblocktrans %}</p>
+
+        <p>{% blocktrans %}The contact details for the court are:{% endblocktrans %}</p>
+
+        <h3 class="heading-small">{% blocktrans %}By post:{% endblocktrans %}</h3>
+
+        <address>{{ court.court_address|linebreaksbr }}</address>
+
+        <h3 class="heading-small">{% blocktrans %}By email:{% endblocktrans %}</h3>
+        <p><a href="mailto:{{ court.court_email }}">{{ court.court_email }}</a></p>
+
+        <h2 class="heading-medium">{% blocktrans %}We’re constantly working to improve this service.{% endblocktrans %}</h2>
+        <p>{% blocktrans %}Please give us <a href="/feedback/">feedback</a> so we can make it better.{% endblocktrans %}</p>
+    </section>
+    
+{% endblock page_content %}
+
+{% block body_end %}
+    {{ block.super }}
+
+    {% if analytics_events and google_analytics_id %}
+<script>
+{% for event in analytics_events %}
+ga('send', 'event', 'Complete submission', '{{ event.action }}', '{{ event.label }}');
+{% endfor %}
+</script>
+    {% endif %}
+{% endblock body_end %}

@@ -29,13 +29,19 @@ class PublicStatsViewSet(viewsets.ViewSet):
         return Response(stats)
 
     @list_route()
+    def days_from_hearing(self, request):
+        stats = CourtEmailCount.objects.get_stats_days_from_hearing()
+
+        return Response(stats)
+
+    @list_route()
     def by_hearing(self, request):
 
-        now = dt.datetime.now()
+        now = dt.date.today()
 
         start_date = now - dt.timedelta(now.weekday())
 
-        stats = CourtEmailCount.objects.get_stats_by_hearing_date(4, start_date)
+        stats = CourtEmailCount.objects.get_stats_by_hearing_date(5, start_date)
 
         return Response(stats)
 
@@ -54,3 +60,10 @@ class PublicStatsViewSet(viewsets.ViewSet):
         serializer = UsageStatsSerializer(stats, many=True)
 
         return Response(serializer.data)
+
+    @list_route()
+    def by_court(self, request):
+
+        stats = CourtEmailCount.objects.get_stats_by_court()
+
+        return Response(stats)
