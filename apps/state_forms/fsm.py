@@ -211,7 +211,7 @@ class ConditionalFSM(BaseFSM):
 
         self.state.load(self.state_data)
 
-    def invalidate_data(self):
+    def invalidate_state_data(self):
         for key, value in self.state_data.items():
             value["valid"] = False
 
@@ -220,13 +220,15 @@ class ConditionalFSM(BaseFSM):
         Starts at the beginning of the journey and
         :return:
         """
-        self.__BaseFSM__state = self.states[0]
-        self.invalidate_data()
+        # Invalidate all the states and move to the start
+        self.invalidate_state_data()
+        self.set_initial_state(self.states.keys()[0])
 
-        while(self.move_to_next()):
-            pass
+        print self.state.name, self.state.all_data
+        while(self.move_to_next(save=False)):
+            print self.state.name, self.state
 
-    def move_to_next(self):
+    def move_to_next(self, new_data=None, save=True):
         next_state = None
 
         # Check if the data meets any of our conditions
@@ -246,16 +248,13 @@ class ConditionalFSM(BaseFSM):
             if available_states:
                 next_state = available_states[0]
 
-
         if next_state is not None:
             self.state.load(self.state_data)
-            updated_state_data = self.state.save()
 
+            if save:
+                if not self.state.save(new_data):
+                    return False
+
+            self.state_data = self.state.all_data
             self.change(next_state)
-
-            if updated_state_data is not None:
-                self.state_data = updated_state_data
-            else:
-                return False
-
             return True

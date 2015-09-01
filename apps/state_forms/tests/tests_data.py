@@ -58,8 +58,9 @@ class StateMachineTestsWithData(TestCase):
     def test_what_happens_at_the_end(self):
         m = TestMachine({"start": {},
                          "step1c": {"field1": "foo foo", "field2": "bar bar"}})
+        self.assertEqual(m.state.name, "start")
         m.move_to_next()
-        m.move_to_next()
+        self.assertEqual(m.state.name, "step1c")
         m.move_to_next()
         self.assertEqual(m.state.name, "end")
         m.move_to_next()
@@ -69,7 +70,8 @@ class StateMachineTestsWithData(TestCase):
         m = TestMachine({})
         self.assertEqual(m.state.name, "start")
         m.move_to_next()
-        self.assertFalse(m.move_to_next())
+        m.move_to_next()
+        self.assertEqual(m.state.name, "step1c")
 
     def test_default_path_with_data(self):
         m = TestMachine({"start": {},

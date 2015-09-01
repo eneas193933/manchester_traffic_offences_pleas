@@ -10,10 +10,10 @@ class PleaState(StateWithData):
 
 
 class PleaStates(ConditionalFSM):
-    case_stage = PleaState(template="case.html",
-                           form_class=forms.CaseForm,
-                           exits_to=["defendant_details[plea_made_by=Defendant]",
-                                     "company_details"])
+    case = PleaState(template="case.html",
+                     form_class=forms.CaseForm,
+                     exits_to=["defendant_details[plea_made_by=Defendant]",
+                               "company_details"])
     # Company path
     company_details = PleaState(template="company_details.html",
                                 form_class=forms.CompanyDetailsForm,

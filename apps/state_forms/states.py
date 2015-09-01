@@ -70,13 +70,14 @@ class StateWithData(BaseState):
         self._loaded = False
 
     def _all_data(self):
-        return self.all_data.get(self.name, )
+        return self.all_data.get(self.name, {})
 
     def load(self, all_data):
         self.all_data = all_data
+
         if self.form_class is not None:
             if self.name in all_data:
-                self.form = self.form_class(all_data[self.name])
+                self.form = self.form_class(initial=all_data[self.name])
             else:
                 self.form = self.form_class()
         else:
@@ -84,10 +85,19 @@ class StateWithData(BaseState):
 
         self._loaded = True
 
-    def save(self):
-        if not self._loaded:
-            raise Exception("State not loaded when attempting save")
+    def save(self, post_data=None):
+        if post_data is None:
+            state_data = self.all_data.get(self.name, {})
+        else:
+            state_data = post_data
 
-        if self.form is not None and self.form.is_valid():
+        if self.form_class is not None:
+            self.form = self.form_class(data=state_data)
+
+        if self.form is None:
+            return True
+        elif self.form.is_valid():
             self.all_data[self.name] = self.form.cleaned_data
-            return self.all_data
+            return True
+        else:
+            return False
