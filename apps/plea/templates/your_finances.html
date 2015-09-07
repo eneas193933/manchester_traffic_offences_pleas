@@ -28,11 +28,11 @@
 
     {% if your_finances.split_form != "split_form_last_step" %}
     <div class="panel-grey">
-        <p>{% trans "For this type of offence you'll usually have to pay a fine:" %}</p>
+        <p>{% blocktrans %}For this type of offence you'll usually have to pay a fine:{% endblocktrans %}</p>
         <ul>
-            <li>{% trans "you must provide your income details" %}</li>
-            <li>{% trans "the court will decide your fine based on your finances and the seriousness of the offence" %}</li>
-            <li>{% trans "your details will be stored securely by the court" %}</li>
+            <li>{% blocktrans %}you must provide your income details{% endblocktrans %}</li>
+            <li>{% blocktrans %}the court will decide your fine based on your finances and the seriousness of the offence{% endblocktrans %}</li>
+            <li>{% blocktrans %}your details will be stored securely by the court{% endblocktrans %}</li>
         </ul>
     </div>
     {% endif %}
@@ -50,10 +50,10 @@
 
         <div class="form-header">
             {% hidden_field form.you_are %}
-            <h2><span>You are:</span>
-                {{ form.you_are.value }}
+            <h2><span>{% blocktrans %}You are:{% endblocktrans %}</span>
+                {% trans form.you_are.value %}
             </h2>
-            <a href="{{ request.path }}?reset">Change</a>
+            <a href="{{ request.path }}?reset">{% blocktrans %}Change{% endblocktrans %}</a>
         </div>
         
         {% if your_finances.you_are == "Employed" %}
@@ -64,9 +64,9 @@
 
             {% radio_field form.employed_hardship hide_optional=True inline=True %}
 
-            <div id="employed_hardship-True" class="js-Conditional" data-conditional-trigger="employed_hardship" data-conditional-value="True">
-                <h2 class="heading-small">{% trans "Note:" %}</h2>
-                <p>{% trans "For the court to consider reducing your fine, you must provide information about your expenses on the next screen." %}</p>
+            <div id="employed_hardship-True" class="panel-indent move-up js-Conditional" data-conditional-trigger="employed_hardship" data-conditional-value="True">
+                <h2 class="heading-small">{% blocktrans %}Note:{% endblocktrans %}</h2>
+                <p>{% blocktrans %}For the court to consider reducing your fine, you must provide information about your expenses on the next screen.{% endblocktrans %}</p>
             </div>
 
         {% endif %}
@@ -75,7 +75,7 @@
 
             {% radio_field form.self_employed_pay_period hide_optional=True %}
 
-            <div id="section-self-employed-other" class="form-group move-up js-Conditional" data-conditional-trigger="self_employed_pay_period" data-conditional-value="Self-employed other">
+            <div id="section-self-employed-other" class="panel-indent move-up js-Conditional" data-conditional-trigger="self_employed_pay_period" data-conditional-value="Self-employed other">
                 {% std_field form.self_employed_pay_other hide_optional=True %}
             </div>
 
@@ -83,9 +83,9 @@
 
             {% radio_field form.self_employed_hardship hide_optional=True inline=True %}
 
-            <div id="self_employed_hardship-True" class="js-Conditional" data-conditional-trigger="self_employed_hardship" data-conditional-value="True">
-                <h2 class="heading-small">{% trans "Note:" %}</h2>
-                <p>{% trans "For the court to consider reducing your fine, you must provide information about your expenses on the next screen." %}</p>
+            <div id="self_employed_hardship-True" class="panel-indent move-up js-Conditional" data-conditional-trigger="self_employed_hardship" data-conditional-value="True">
+                <h2 class="heading-small">{% blocktrans %}Note:{% endblocktrans %}</h2>
+                <p>{% blocktrans %}For the court to consider reducing your fine, you must provide information about your expenses on the next screen.{% endblocktrans %}</p>
             </div>
 
         {% endif %}
@@ -98,7 +98,7 @@
 
             {% radio_field form.benefits_period hide_optional=True %}
 
-            <div id="section-benefits-other" class="form-group move-up js-Conditional" data-conditional-trigger="benefits_period" data-conditional-value="Benefits other">
+            <div id="section-benefits-other" class="panel-indent move-up js-Conditional" data-conditional-trigger="benefits_period" data-conditional-value="Benefits other">
                 {% std_field form.benefits_pay_other hide_optional=True %}
             </div>
 
@@ -106,9 +106,9 @@
 
             {% radio_field form.receiving_benefits_hardship hide_optional=True inline=True %}
 
-            <div id="receiving_benefits_hardship-True" class="js-Conditional" data-conditional-trigger="receiving_benefits_hardship" data-conditional-value="True">
-                <h2 class="heading-small">{% trans "Note:" %}</h2>
-                <p>{% trans "For the court to consider reducing your fine, you must provide information about your expenses on the next screen." %}</p>
+            <div id="receiving_benefits_hardship-True" class="panel-indent move-up js-Conditional" data-conditional-trigger="receiving_benefits_hardship" data-conditional-value="True">
+                <h2 class="heading-small">{% blocktrans %}Note:{% endblocktrans %}</h2>
+                <p>{% blocktrans %}For the court to consider reducing your fine, you must provide information about your expenses on the next screen.{% endblocktrans %}</p>
             </div>
 
         {% endif %}
@@ -121,9 +121,9 @@
 
             {% radio_field form.other_hardship hide_optional=True inline=True %}
 
-            <div id="other_hardship-True" class="js-Conditional" data-conditional-trigger="other_hardship" data-conditional-value="True">
-                <h2 class="heading-small">{% trans "Note:" %}</h2>
-                <p>{% trans "For the court to consider reducing your fine, you must provide information about your expenses on the next screen." %}</p>
+            <div id="other_hardship-True" class="panel-indent move-up js-Conditional" data-conditional-trigger="other_hardship" data-conditional-value="True">
+                <h2 class="heading-small">{% blocktrans %}Note:{% endblocktrans %}</h2>
+                <p>{% blocktrans %}For the court to consider reducing your fine, you must provide information about your expenses on the next screen.{% endblocktrans %}</p>
             </div>
 
         {% endif %}

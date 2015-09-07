@@ -7,67 +7,19 @@ Main styles
 
 
 /*== Start screen ==================================================*/
-.intro {
-	h2:first-child {
-		margin-top: 0;
+.get-started {
+	h2 {
+		margin-bottom: .5em;
 	}
 
-	.get-started {
-		padding-top: .75em;
-	}
-}
-
-.fine-reduction {
-	p {
-		@include core-16;
-
-		strong {
-			@include bold-80();
-			position: relative;
-			top: .075em;
-		}
+	.panel-indent {
+		margin-top: .5em;
 	}
 }
 
-
-/*== Case screen =============================================*/
-
-.with-help-images {
-	.help-image {
-		display: none;
-	}
-
-	@include media(tablet) {
-		.form-group {
-			float: left;
-
-			@include ie-lte(7) {
-				width: 60%;
-			}
-		}
-		.help-image {
-			display: block;
-			float: right;
-			clear: right;
-			max-width: 30%;
-
-			@include ie-lte(7) {
-				width: 30%;
-			}
-		}
-	}
-}
-
-.form-control-urn-2,
-.form-control-urn-7 {
-	@extend .form-control-inline;
-}
-.form-control-urn-2,
-#id_number_of_charges {
-	width: 2em;
-}
-.form-control-urn-7 {
-	width: 5em;
+.related-start {
+	@extend .related;
+	margin-top: 5em;
 }
 
 
@@ -95,10 +47,6 @@ Main styles
 			padding-right: 10px;
 			background: #fff;
 		}
-	}
-
-	.js-Conditional .form-group-wide {
-		margin-bottom: 0;
 	}
 }
 
@@ -158,16 +106,17 @@ Main styles
 /*== Review screen ==========================================*/
 .review-table {
 	margin: 0 0 2em;
-	border-bottom: 1px solid $grey-2;
 
 	thead {
 		th {
 			padding: 1.125em 0 0;
+			border: 1px solid $grey-2;
+			border-width: 1px 0 0;
 
 			h2 {
 				display: inline-block;
-				margin: 0 0 .5em;
-				@include core-24();
+				margin: 0 0 .25em;
+				@include bold-24();
 
 				@include ie-lte(7) {
 					float: left;
@@ -176,7 +125,7 @@ Main styles
 
 			.change-link {
 				float: right;
-				margin: .1em 0 .75em 1em;
+				margin: .1em 0 0 1em;
 				@include core-19;
 
 				@include media(tablet) {
@@ -218,6 +167,7 @@ Main styles
 
 		.important {
 			@extend p.important;
+			font-weight: bold;
 			display: block;
 			margin: 0 0 1.25em;
 		}
@@ -242,7 +192,7 @@ Main styles
 
 
 /*== Complete screen ===============================================*/
-#content .success-header {
+.success-header {
 	margin: 2em 0;
 	padding: 40px;
 	background: $turquoise;
@@ -250,13 +200,8 @@ Main styles
 
 	h1,
 	p {
-		margin: 0;
-	}
-	h1 {
 		@include bold-36();
-	}
-	p {
-		@include bold-24();
+		margin: 0;
 	}
 
 	.ticked {
@@ -290,6 +235,8 @@ Main styles
 		margin-bottom: 0;
 	}
 }
+
+
 
 /*== Terms ==========================================================*/
 .cookies-table {

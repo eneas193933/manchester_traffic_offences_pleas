@@ -16,9 +16,24 @@ from .fields import (ERROR_MESSAGES,
                      DSRadioFieldRenderer,
                      DateWidget)
 
-YESNO_CHOICES = (
-    (True, _("Yes")),
-    (False, _("No"))
+YESNO_CHOICES_1 = (
+    (True, _("Yes (v1)")),
+    (False, _("No (v1)"))
+)
+
+YESNO_CHOICES_2 = (
+    (True, _("Yes (v2)")),
+    (False, _("No (v2)"))
+)
+
+YESNO_CHOICES_3 = (
+    (True, _("Yes (v3)")),
+    (False, _("No (v3)"))
+)
+
+YESNO_CHOICES_4 = (
+    (True, _("Yes (v4)")),
+    (False, _("No (v4)"))
 )
 
 to_bool = lambda x: x == "True"
@@ -98,14 +113,14 @@ class SplitPleaStepForm(BasePleaStepForm):
 
 class CaseForm(BasePleaStepForm):
     PLEA_MADE_BY_CHOICES = (
-        ("Defendant", _("The person named in the requisition pack")),
+        ("Defendant", _("The person named in the notice")),
         ("Company representative", _("Pleading on behalf of a company")))
 
     urn = forms.CharField(widget=forms.TextInput(attrs={"class": "form-control"}),
                           label=_("Unique reference number (URN)"),
                           required=True,
                           validators=[is_urn_valid, is_urn_not_used],
-                          help_text=_("On page 1 of the requisition pack, in the top right corner.<br>For example, 12/AB/34567/00"),
+                          help_text=_("On page 1 of the notice, usually at the top."),
                           error_messages={"required": ERROR_MESSAGES["URN_REQUIRED"],
                                           "is_urn_valid": ERROR_MESSAGES["URN_INVALID"],
                                           "is_urn_not_used": ERROR_MESSAGES['URN_ALREADY_USED']})
@@ -114,28 +129,36 @@ class CaseForm(BasePleaStepForm):
                                       validators=[is_date_in_future, is_date_within_range],
                                       required=True,
                                       label=_("Court hearing date"),
-                                      help_text=_("On page 1 of the pack, near the top on the left.<br>For example, 30/07/2014"),
+                                      help_text=_("On page 1 of the notice, near the top. <br>For example, 30/07/2014"),
                                       error_messages={"required": ERROR_MESSAGES["HEARING_DATE_REQUIRED"],
                                                       "invalid": ERROR_MESSAGES["HEARING_DATE_INVALID"],
                                                       "is_date_in_future": ERROR_MESSAGES["HEARING_DATE_PASSED"],
                                                       "is_date_within_range": ERROR_MESSAGES["HEARING_DATE_INCORRECT"]})
 
-    number_of_charges = forms.IntegerField(label=_("Number of charges against you"),
+    number_of_charges = forms.IntegerField(label=_("Number of charges"),
                                            widget=forms.TextInput(attrs={"pattern": "[0-9]*",
                                                                          "maxlength": "2",
-                                                                         "class": "form-control-inline"}),
-                                           help_text=_("On page 2 of the pack, in numbered boxes.<br>For example, 1"),
+                                                                         "class": "form-control-inline",
+                                                                         "size": "2"}),
+                                           help_text=_("On the charge sheet, in numbered boxes."),
                                            min_value=1, max_value=10,
                                            error_messages={"required": ERROR_MESSAGES["NUMBER_OF_CHARGES_REQUIRED"]})
 
     plea_made_by = forms.TypedChoiceField(required=True, widget=RadioSelect(renderer=DSRadioFieldRenderer),
                                           choices=PLEA_MADE_BY_CHOICES,
-                                          label=_("Are you?"),
+                                          label=_("Are you? (plea made by)"),
                                           help_text=_("Choose one of the following options:"),
                                           error_messages={"required": ERROR_MESSAGES["PLEA_MADE_BY_REQUIRED"]})
 
 
 class YourDetailsForm(BasePleaStepForm):
+    dependencies = {
+        "updated_address": {
+            "field": "correct_address",
+            "value": "False"
+        }
+    }
+
     first_name = forms.CharField(widget=forms.TextInput(attrs={"class": "form-control"}),
                                  max_length=100,
                                  required=True,
@@ -151,14 +174,14 @@ class YourDetailsForm(BasePleaStepForm):
     correct_address = forms.TypedChoiceField(widget=RadioSelect(renderer=DSRadioFieldRenderer),
                                              required=True,
                                              coerce=to_bool,
-                                             choices=YESNO_CHOICES,
-                                             label=_("Is your address on the requisition pack correct?"),
+                                             choices=YESNO_CHOICES_1,
+                                             label=_("Is your address correct on page 1 of the notice we sent to you?"),
                                              error_messages={"required": ERROR_MESSAGES["CORRECT_ADDRESS_REQUIRED"]})
 
     updated_address = forms.CharField(widget=forms.Textarea(attrs={"rows": "4", "class": "form-control"}),
                                       required=False,
                                       label="",
-                                      help_text=_("If your address is different from the one shown on page 1 of the requisition pack, tell us here:"),
+                                      help_text=_("If no, tell us your correct address here:"),
                                       error_messages={"required": ERROR_MESSAGES["UPDATED_ADDRESS_REQUIRED"]})
 
     contact_number = forms.CharField(widget=forms.TextInput(attrs={"type": "tel", "class": "form-control"}),
@@ -168,13 +191,6 @@ class YourDetailsForm(BasePleaStepForm):
                                      help_text=_("Landline or mobile number."),
                                      error_messages={"required": ERROR_MESSAGES["CONTACT_NUMBER_REQUIRED"],
                                                      "invalid": ERROR_MESSAGES["CONTACT_NUMBER_INVALID"]})
-
-    email = forms.EmailField(widget=forms.TextInput(attrs={"type": "email", "class": "form-control"}),
-                             required=getattr(settings, "EMAIL_REQUIRED", True),
-                             label=_("Email address"),
-                             help_text=_("We'll use this for all future correspondence. We'll also contact you by post."),
-                             error_messages={"required": ERROR_MESSAGES["EMAIL_ADDRESS_REQUIRED"],
-                                             "invalid": ERROR_MESSAGES["EMAIL_ADDRESS_INVALID"]})
 
     date_of_birth = forms.DateField(widget=DateWidget,
                                     required=True,
@@ -192,20 +208,17 @@ class YourDetailsForm(BasePleaStepForm):
     driving_licence_number = forms.CharField(widget=forms.TextInput(attrs={"class": "form-control"}),
                                              required=False,
                                              label=_("UK driving licence number"),
-                                             help_text=_("Starts with the first five letters from your last name."))
+                                             help_text=_("Starts with letters from your last name."))
 
-    def __init__(self, *args, **kwargs):
-        super(YourDetailsForm, self).__init__(*args, **kwargs)
-        try:
-            data = args[0]
-        except IndexError:
-            data = {}
-
-        if "correct_address" in data:
-            if data["correct_address"] == "False":
-                self.fields["updated_address"].required = True
 
 class CompanyDetailsForm(BasePleaStepForm):
+    dependencies = {
+        "updated_address": {
+            "field": "correct_address",
+            "value": "False"
+        }
+    }
+
     COMPANY_POSITION_CHOICES = (
         ("Director", _("director")),
         ("Company secretary", _("company secretary")),
@@ -215,20 +228,20 @@ class CompanyDetailsForm(BasePleaStepForm):
                                    widget=forms.TextInput(attrs={"class": "form-control"}),
                                    max_length=100,
                                    required=True,
-                                   help_text=_("As written on page 1 of the requisition pack we sent you."),
+                                   help_text=_("As written on page 1 of the notice we sent you."),
                                    error_messages={"required": ERROR_MESSAGES["COMPANY_NAME_REQUIRED"]})
 
     correct_address = forms.TypedChoiceField(widget=RadioSelect(renderer=DSRadioFieldRenderer),
                                              coerce=to_bool,
-                                             choices=YESNO_CHOICES,
+                                             choices=YESNO_CHOICES_1,
                                              required=True,
-                                             label=_("Is the company's address on the requisition pack correct?"),
+                                             label=_("Is the company's address correct on page 1 of the notice we sent to you?"),
                                              error_messages={"required": ERROR_MESSAGES["COMPANY_CORRECT_ADDRESS_REQUIRED"]})
 
     updated_address = forms.CharField(widget=forms.Textarea(attrs={"rows": "4", "class": "form-control"}),
                                       label="",
                                       required=False,
-                                      help_text=_("If the company address is different from the one shown on page 1 of the requisition pack, tell us here:"),
+                                      help_text=_("If no, tell us the correct company address here:"),
                                       error_messages={"required": ERROR_MESSAGES["COMPANY_UPDATED_ADDRESS_REQUIRED"]})
 
     first_name = forms.CharField(label=_("Your first name"),
@@ -255,24 +268,6 @@ class CompanyDetailsForm(BasePleaStepForm):
                                      help_text=_("Office or mobile number."),
                                      error_messages={"required": ERROR_MESSAGES["COMPANY_CONTACT_NUMBER_REQUIRED"],
                                                      "invalid": ERROR_MESSAGES["CONTACT_NUMBER_INVALID"]})
-
-    email = forms.EmailField(widget=forms.TextInput(attrs={"type": "email",
-                                                           "class": "form-control"}),
-                             required=getattr(settings, "EMAIL_REQUIRED", True),
-                             label=_("Email address"),
-                             error_messages={"required": ERROR_MESSAGES["COMPANY_EMAIL_ADDRESS_REQUIRED"],
-                                             "invalid": ERROR_MESSAGES["EMAIL_ADDRESS_INVALID"]})
-
-    def __init__(self, *args, **kwargs):
-        super(CompanyDetailsForm, self).__init__(*args, **kwargs)
-        try:
-            data = args[0]
-        except IndexError:
-            data = {}
-
-        if "correct_address" in data:
-            if data["correct_address"] == "False":
-                self.fields["updated_address"].required = True
 
 
 class YourMoneyForm(SplitPleaStepForm):
@@ -324,7 +319,7 @@ class YourMoneyForm(SplitPleaStepForm):
         "trigger": "you_are"
     }
 
-    you_are = forms.ChoiceField(label=_("Are you?"), choices=YOU_ARE_CHOICES,
+    you_are = forms.ChoiceField(label=_("Are you? (employment status)"), choices=YOU_ARE_CHOICES,
                                 widget=forms.RadioSelect(renderer=DSRadioFieldRenderer),
                                 error_messages={"required": ERROR_MESSAGES["YOU_ARE_REQUIRED"]})
     # Employed
@@ -347,7 +342,7 @@ class YourMoneyForm(SplitPleaStepForm):
     employed_hardship = forms.TypedChoiceField(label=_("Would paying a fine cause you serious financial problems?"),
                                                help_text=_("For example, you would become homeless."),
                                                widget=RadioSelect(renderer=DSRadioFieldRenderer),
-                                               choices=YESNO_CHOICES,
+                                               choices=YESNO_CHOICES_4,
                                                coerce=to_bool,
                                                error_messages={"required": ERROR_MESSAGES["HARDSHIP_REQUIRED"]})
 
@@ -377,7 +372,7 @@ class YourMoneyForm(SplitPleaStepForm):
     self_employed_hardship = forms.TypedChoiceField(label=_("Would paying a fine cause you serious financial problems?"),
                                                     help_text=_("For example, you would become homeless."),
                                                     widget=RadioSelect(renderer=DSRadioFieldRenderer),
-                                                    choices=YESNO_CHOICES,
+                                                    choices=YESNO_CHOICES_4,
                                                     coerce=to_bool,
                                                     error_messages={"required": ERROR_MESSAGES["HARDSHIP_REQUIRED"]})
 
@@ -389,7 +384,7 @@ class YourMoneyForm(SplitPleaStepForm):
                                        error_messages={"required": ERROR_MESSAGES["BENEFITS_DETAILS_REQUIRED"]})
 
     benefits_dependents = forms.TypedChoiceField(widget=RadioSelect(renderer=DSRadioFieldRenderer),
-                                            choices=YESNO_CHOICES,
+                                            choices=YESNO_CHOICES_1,
                                             coerce=to_bool,
                                             label=_("Does this include payment for dependants?"),
                                             error_messages={"required": ERROR_MESSAGES["BENEFITS_DEPENDANTS_REQUIRED"]})
@@ -419,7 +414,7 @@ class YourMoneyForm(SplitPleaStepForm):
     receiving_benefits_hardship = forms.TypedChoiceField(label=_("Would paying a fine cause you serious financial problems?"),
                                                          help_text=_("For example, you would become homeless."),
                                                          widget=RadioSelect(renderer=DSRadioFieldRenderer),
-                                                         choices=YESNO_CHOICES,
+                                                         choices=YESNO_CHOICES_4,
                                                          coerce=to_bool,
                                                          error_messages={"required": ERROR_MESSAGES["HARDSHIP_REQUIRED"]})
 
@@ -439,7 +434,7 @@ class YourMoneyForm(SplitPleaStepForm):
     other_hardship = forms.TypedChoiceField(label=_("Would paying a fine cause you serious financial problems?"),
                                             help_text=_("For example, you would become homeless."),
                                             widget=RadioSelect(renderer=DSRadioFieldRenderer),
-                                            choices=YESNO_CHOICES,
+                                            choices=YESNO_CHOICES_4,
                                             coerce=to_bool,
                                             error_messages={"required": ERROR_MESSAGES["HARDSHIP_REQUIRED"]})
 
@@ -506,7 +501,7 @@ class YourExpensesForm(BasePleaStepForm):
     other_bill_payers = forms.TypedChoiceField(
         widget=RadioSelect(renderer=DSRadioFieldRenderer),
         label=_("Does anyone else contribute to these bills?"),
-        choices=YESNO_CHOICES,
+        choices=YESNO_CHOICES_3,
         coerce=to_bool,
         error_messages={'required': ERROR_MESSAGES['OTHER_BILL_PAYERS_REQUIRED']})
 
@@ -606,7 +601,7 @@ class CompanyFinancesForm(SplitPleaStepForm):
     }
 
     trading_period = forms.TypedChoiceField(required=True, widget=RadioSelect(renderer=DSRadioFieldRenderer),
-                                            choices=YESNO_CHOICES,
+                                            choices=YESNO_CHOICES_1,
                                             coerce=to_bool,
                                             label=_("Has the company been trading for more than 12 months?"),
                                             error_messages={"required": ERROR_MESSAGES["COMPANY_TRADING_PERIOD"]})
@@ -626,12 +621,14 @@ class CompanyFinancesForm(SplitPleaStepForm):
                                         max_digits=10,
                                         decimal_places=2,
                                         localize=True,
+                                        label=_("Gross turnover"),
                                         help_text=_("For example, 150000"),
                                         error_messages={"required": ERROR_MESSAGES["COMPANY_GROSS_TURNOVER"]})
 
     net_turnover = forms.DecimalField(widget=forms.TextInput(attrs={"pattern": "[0-9]*",
                                                                     "maxlength": "10",
                                                                     "class": "form-control-inline"}),
+                                      label=_("Net turnover"),
                                       help_text=_("For example, 110000"),
                                       max_digits=10,
                                       decimal_places=2,
@@ -651,6 +648,28 @@ class CompanyFinancesForm(SplitPleaStepForm):
 
 
 class ConfirmationForm(BasePleaStepForm):
+    dependencies = {
+        "email": {
+            "field": "receive_email_updates",
+            "value": "True"
+        }
+    }
+
+    receive_email_updates = forms.TypedChoiceField(widget=RadioSelect(renderer=DSRadioFieldRenderer),
+                                                   required=True,
+                                                   coerce=to_bool,
+                                                   choices=YESNO_CHOICES_2,
+                                                   label=_("Do you want to receive email updates about your case?"),
+                                                   help_text=_("We'll use this for all future correspondence as well as contacting you by post."),
+                                                   error_messages={"required": ERROR_MESSAGES["RECEIVE_EMAIL_UPDATES_REQUIRED"]})
+
+    email = forms.EmailField(widget=forms.TextInput(attrs={"type": "email", "class": "form-control"}),
+                                          required=False,
+                                          label=_("Email address"),
+                                          help_text=_("We'll use this for all future correspondence. We'll also contact you by post."),
+                                          error_messages={"required": ERROR_MESSAGES["UPDATES_EMAIL_REQUIRED"],
+                                                          "invalid": ERROR_MESSAGES["EMAIL_ADDRESS_INVALID"]})
+
     understand = forms.BooleanField(required=True,
                                     error_messages={"required": ERROR_MESSAGES["UNDERSTAND_REQUIRED"]})
 
@@ -665,6 +684,16 @@ class PleaForm(SplitPleaStepForm):
         "not_guilty_extra": {
             "field": "guilty",
             "value": "not_guilty"
+        },
+        "interpreter_needed": {
+            "field": "guilty",
+            "value": "not_guilty",
+            "dependencies": {
+                "interpreter_language": {
+                    "field": "interpreter_needed",
+                    "value": "True"
+                }
+            }
         }
     }
 
@@ -678,15 +707,29 @@ class PleaForm(SplitPleaStepForm):
 
     guilty_extra = forms.CharField(label=_("Mitigation"),
                                    widget=Textarea(attrs={"class": "form-control", "rows": "4"}),
-                                   help_text=_("What would you like the court to consider?"),
+                                   help_text=_("Is there something you would like the court to consider?"),
                                    required=False,
                                    max_length=5000)
 
     not_guilty_extra = forms.CharField(label=_("Not guilty because?"),
                                        widget=Textarea(attrs={"class": "form-control", "rows": "4"}),
-                                       help_text=_("Tell us here:<ul><li>why you believe you are not guilty</li><li>if you disagree with any evidence from a witness statement in the requisition pack &ndash; tell us the name of the witness  and what you disagree with</li><li>the name, address and date of birth of any witnesses you want to call  to support your case</li></ul>"),
+                                       help_text=_("Why do you believe you are not guilty?"),
                                        max_length=5000,
                                        error_messages={"required": ERROR_MESSAGES["NOT_GUILTY_REQUIRED"]})
+
+    interpreter_needed = forms.TypedChoiceField(widget=RadioSelect(renderer=DSRadioFieldRenderer),
+                                                required=True,
+                                                choices=YESNO_CHOICES_3,
+                                                coerce=to_bool,
+                                                label=_("Do you need an interpreter in court?"),
+                                                error_messages={"required": ERROR_MESSAGES["INTERPRETER_NEEDED_REQUIRED"]})
+
+    interpreter_language = forms.CharField(widget=forms.TextInput(attrs={"class": "form-control"}),
+                                           max_length=100,
+                                           required=True,
+                                           label="",
+                                           help_text=_("If yes, tell us which language (include sign language):"),
+                                           error_messages={"required": ERROR_MESSAGES["INTERPRETER_LANGUAGE_REQUIRED"]})
 
 
 class CourtFinderForm(forms.Form):
@@ -694,6 +737,6 @@ class CourtFinderForm(forms.Form):
                           label=_("Unique reference number (URN)"),
                           required=True,
                           validators=[is_urn_valid],
-                          help_text=_("On page 1 of the pack, in the top right corner.<br>For example, 12/AB/34567/00"),
+                          help_text=_("On page 1, usually at the top."),
                           error_messages={"required": ERROR_MESSAGES["URN_REQUIRED"],
                                           "is_urn_valid": ERROR_MESSAGES["URN_INCORRECT"]})

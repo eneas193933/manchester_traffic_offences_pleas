@@ -26,11 +26,12 @@
 
 <body>
 <h1>Online plea</h1>
-   <table class="review-table" id="case-details">
+
+    <table class="review-table" id="case-details">
     <thead>
         <tr>
             <th colspan="2">
-                <h2>{% trans "Case details" %}</h2>
+                <h2>{% blocktrans %}Case details{% endblocktrans %}</h2>
             </th>
         </tr>
     </thead>
@@ -42,9 +43,9 @@
         <tr>
             <th colspan="2">
             {% if case.plea_made_by == "Defendant" %}
-                <h2>{% trans "Your details" %}</h2>
+                <h2>{% blocktrans %}Your details{% endblocktrans %}</h2>
             {% elif case.plea_made_by == "Company representative" %}
-                <h2>{% trans "Company representative details" %}</h2>
+                <h2>{% blocktrans %}Company representative details{% endblocktrans %}</h2>
             {% endif %}
             </th>
         </tr>
@@ -73,7 +74,7 @@
             <thead>
             <tr>
                 <th colspan="2">
-                    <h2>{% trans "Your finances" %}</h2>
+                    <h2>{% blocktrans %}Your finances{% endblocktrans %}</h2>
                 </th>
             </tr>
             </thead>
@@ -90,7 +91,7 @@
             <thead>
             <tr>
                 <th colspan="2">
-                    <h2>{% trans "Your finances" %}</h2>
+                    <h2>{% blocktrans %}Your finances{% endblocktrans %}</h2>
                 </th>
             </tr>
             </thead>
@@ -102,7 +103,7 @@
                     <thead>
                     <tr>
                         <th colspan="2">
-                            <h2>{% trans "Your expenses" %}</h2>
+                            <h2>{% blocktrans %}Your expenses{% endblocktrans %}</h2>
                         </th>
                     </tr>
                     </thead>
@@ -117,13 +118,51 @@
                 <thead>
                 <tr>
                     <th colspan="2">
-                        <h2>{% trans "Company financial details" %}</h2>
+                        <h2>{% blocktrans %}Company financial details{% endblocktrans %}</h2>
                     </th>
                 </tr>
                 </thead>
                 {% include "partials/review_company_finances.html" %}
                 </table>
         {% endif %}
+    {% endif %}
+
+    <table class="review-table" id="confirmation">
+        <thead>
+        <tr>
+            <th colspan="2">
+                <h2>Confirmation</h2>
+            </th>
+        </tr>
+        </thead>
+        <tbody>
+            <tr>
+                <th>Email updates</th>
+                <td>{{ review.receive_email_updates|yesno:"Yes,No" }}</td>
+            </tr>
+            <tr>
+                <th>Email address</th>
+                <td>{{ review.email|default:"-" }}</td>
+            </tr>
+        </tbody>
+    </table>
+
+    {% if welsh_language %}
+    <table class="review-table" id="welsh_language">
+    <thead>
+        <tr>
+            <th colspan="2">
+                <h2>Plea language</h2>
+            </th>
+        </tr>
+    </thead>
+    <tbody>
+        <tr>
+            <th>Welsh language</th>
+            <td>Yes</td>
+        </tr>
+    </tbody>
+    </table>
     {% endif %}
 </body>
 </html>

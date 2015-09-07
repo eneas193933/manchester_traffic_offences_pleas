@@ -3,13 +3,13 @@
 {% load i18n %}
 {% load form_widgets %}
 
-{% block page_title %}{% trans "Your details" %} - {{ block.super }}{% endblock %}
+{% block page_title %}{% blocktrans %}Your details{% endblocktrans %} - {{ block.super }}{% endblock %}
 
 
 {% block stage_header %}
-    <h1>{% trans "Your details" %}</h1>
+    <h1>{% blocktrans %}Your details{% endblocktrans %}</h1>
 
-    <p>{% trans "We need these in case we have to get in touch with you about your plea." %}</p>
+    <p>{% blocktrans %}We need these in case we have to get in touch with you about your plea.{% endblocktrans %}</p>
 {% endblock stage_header %}
 
 
@@ -18,15 +18,13 @@
 
     {% std_field form.last_name %}
 
-    {% radio_field form.correct_address inline=True %}
+    {% radio_field form.correct_address inline=True wide=True %}
 
-    <div class="form-group-wide move-up js-Conditional" data-conditional-trigger="correct_address" data-conditional-value="False">
+    <div class="panel-indent move-up js-Conditional" data-conditional-trigger="correct_address" data-conditional-value="False">
         {% std_field form.updated_address hide_optional=True %}
     </div>
 
     {% std_field form.contact_number %}
-
-    {% std_field form.email %}
 
     {% std_field form.date_of_birth %}
 
