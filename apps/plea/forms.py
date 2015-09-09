@@ -1,117 +1,24 @@
 from __future__ import unicode_literals
 
 from django import forms
-from django.forms.formsets import BaseFormSet
 from django.forms.widgets import Textarea, RadioSelect
-from django.conf import settings
 from django.utils.translation import ugettext_lazy as _
 
+from apps.govuk_utils.fields import DSRadioFieldRenderer, DateWidget
+from apps.govuk_utils.forms import (YESNO_CHOICES,
+                                    to_bool,
+                                    BaseStageForm,
+                                    SplitStageForm)
+
+from .fields import ERROR_MESSAGES
 from .validators import (is_date_in_past,
                          is_date_in_future,
                          is_date_within_range,
                          is_urn_not_used,
                          is_urn_valid)
 
-from .fields import (ERROR_MESSAGES,
-                     DSRadioFieldRenderer,
-                     DateWidget)
 
-YESNO_CHOICES_1 = (
-    (True, _("Yes (v1)")),
-    (False, _("No (v1)"))
-)
-
-YESNO_CHOICES_2 = (
-    (True, _("Yes (v2)")),
-    (False, _("No (v2)"))
-)
-
-YESNO_CHOICES_3 = (
-    (True, _("Yes (v3)")),
-    (False, _("No (v3)"))
-)
-
-YESNO_CHOICES_4 = (
-    (True, _("Yes (v4)")),
-    (False, _("No (v4)"))
-)
-
-to_bool = lambda x: x == "True"
-
-
-class RequiredFormSet(BaseFormSet):
-    def __init__(self, *args, **kwargs):
-        super(RequiredFormSet, self).__init__(*args, **kwargs)
-        for form in self.forms:
-            form.empty_permitted = False
-
-
-class BasePleaStepForm(forms.Form):
-    def __init__(self, *args, **kwargs):
-        super(BasePleaStepForm, self).__init__(*args, **kwargs)
-        try:
-            self.data = args[0]
-        except IndexError:
-            self.data = kwargs.get("data", {})
-
-        self.split_form = self.data.get("split_form", None)
-
-        if hasattr(self, "dependencies"):
-            prefix = kwargs.get("prefix", None)
-            self.check_dependencies(self.dependencies, prefix)
-
-    def check_dependencies(self, dependencies_list, prefix=None):
-        """
-        Set the required attribute depending on the dependencies map
-        and the already submitted data
-        """
-        for field, dependency in dependencies_list.items():
-            dependency_field = dependency.get("field", None)
-            dependency_value = dependency.get("value", None)
-            sub_dependencies = dependency.get("dependencies", None)
-
-            """
-            When a form has a prefix, the key in the field is the original,
-            but the key in data is updated. Would there be a nicer way of
-            handling this?
-            """
-            if prefix:
-                dependency_field_data_key = prefix + "-" + dependency_field
-            else:
-                dependency_field_data_key = dependency_field
-
-            if self.fields.get(field, None):
-
-                self.fields[field].required = False
-
-                if self.fields[dependency_field].required:
-                    if self.split_form is None or self.split_form != dependency_field:
-                        if dependency_value and self.data.get(dependency_field_data_key, None) == dependency_value:
-                            self.fields[field].required = True
-                        
-                        if not dependency_value and self.data.get(dependency_field_data_key, None) is not None:
-                            self.fields[field].required = True
-
-                    if sub_dependencies:
-                        self.check_dependencies(sub_dependencies, prefix)
-
-
-class SplitPleaStepForm(BasePleaStepForm):
-    split_form = forms.CharField(widget=forms.HiddenInput(), required=False)
-
-    split_form_options = {}
-
-    def __init__(self, *args, **kwargs):
-        super(SplitPleaStepForm, self).__init__(*args, **kwargs)
-
-        if self.split_form is None:
-            self.fields["split_form"].initial = self.split_form_options.get("trigger", False)
-
-        if self.split_form_options.get("nojs_only", False):
-            self.fields["split_form"].widget.attrs.update({"class": "nojs-only"})
-
-
-class CaseForm(BasePleaStepForm):
+class CaseForm(BaseStageForm):
     PLEA_MADE_BY_CHOICES = (
         ("Defendant", _("The person named in the notice")),
         ("Company representative", _("Pleading on behalf of a company")))
@@ -151,7 +58,7 @@ class CaseForm(BasePleaStepForm):
                                           error_messages={"required": ERROR_MESSAGES["PLEA_MADE_BY_REQUIRED"]})
 
 
-class YourDetailsForm(BasePleaStepForm):
+class YourDetailsForm(BaseStageForm):
     dependencies = {
         "updated_address": {
             "field": "correct_address",
@@ -174,7 +81,7 @@ class YourDetailsForm(BasePleaStepForm):
     correct_address = forms.TypedChoiceField(widget=RadioSelect(renderer=DSRadioFieldRenderer),
                                              required=True,
                                              coerce=to_bool,
-                                             choices=YESNO_CHOICES_1,
+                                             choices=YESNO_CHOICES["Ydy/Nac ydy"],
                                              label=_("Is your address correct on page 1 of the notice we sent to you?"),
                                              error_messages={"required": ERROR_MESSAGES["CORRECT_ADDRESS_REQUIRED"]})
 
@@ -211,7 +118,7 @@ class YourDetailsForm(BasePleaStepForm):
                                              help_text=_("Starts with letters from your last name."))
 
 
-class CompanyDetailsForm(BasePleaStepForm):
+class CompanyDetailsForm(BaseStageForm):
     dependencies = {
         "updated_address": {
             "field": "correct_address",
@@ -233,7 +140,7 @@ class CompanyDetailsForm(BasePleaStepForm):
 
     correct_address = forms.TypedChoiceField(widget=RadioSelect(renderer=DSRadioFieldRenderer),
                                              coerce=to_bool,
-                                             choices=YESNO_CHOICES_1,
+                                             choices=YESNO_CHOICES["Ydy/Nac ydy"],
                                              required=True,
                                              label=_("Is the company's address correct on page 1 of the notice we sent to you?"),
                                              error_messages={"required": ERROR_MESSAGES["COMPANY_CORRECT_ADDRESS_REQUIRED"]})
@@ -270,7 +177,7 @@ class CompanyDetailsForm(BasePleaStepForm):
                                                      "invalid": ERROR_MESSAGES["CONTACT_NUMBER_INVALID"]})
 
 
-class YourMoneyForm(SplitPleaStepForm):
+class YourMoneyForm(SplitStageForm):
 
     YOU_ARE_CHOICES = (("Employed", _("Employed")),
                        ("Self-employed", _("Self-employed")),
@@ -293,8 +200,8 @@ class YourMoneyForm(SplitPleaStepForm):
         "employed_take_home_pay_amount": {"field": "you_are", "value": "Employed"},
         "employed_hardship": {"field": "you_are", "value": "Employed"},
 
-        "self_employed_pay_period": {"field": "you_are", 
-                                     "value": "Self-employed", 
+        "self_employed_pay_period": {"field": "you_are",
+                                     "value": "Self-employed",
                                      "dependencies": {"self_employed_pay_other": {"field": "self_employed_pay_period",
                                                                                   "value": "Self-employed other" }}},
 
@@ -342,7 +249,7 @@ class YourMoneyForm(SplitPleaStepForm):
     employed_hardship = forms.TypedChoiceField(label=_("Would paying a fine cause you serious financial problems?"),
                                                help_text=_("For example, you would become homeless."),
                                                widget=RadioSelect(renderer=DSRadioFieldRenderer),
-                                               choices=YESNO_CHOICES_4,
+                                               choices=YESNO_CHOICES["Byddai/Na fyddai"],
                                                coerce=to_bool,
                                                error_messages={"required": ERROR_MESSAGES["HARDSHIP_REQUIRED"]})
 
@@ -372,7 +279,7 @@ class YourMoneyForm(SplitPleaStepForm):
     self_employed_hardship = forms.TypedChoiceField(label=_("Would paying a fine cause you serious financial problems?"),
                                                     help_text=_("For example, you would become homeless."),
                                                     widget=RadioSelect(renderer=DSRadioFieldRenderer),
-                                                    choices=YESNO_CHOICES_4,
+                                                    choices=YESNO_CHOICES["Byddai/Na fyddai"],
                                                     coerce=to_bool,
                                                     error_messages={"required": ERROR_MESSAGES["HARDSHIP_REQUIRED"]})
 
@@ -384,7 +291,7 @@ class YourMoneyForm(SplitPleaStepForm):
                                        error_messages={"required": ERROR_MESSAGES["BENEFITS_DETAILS_REQUIRED"]})
 
     benefits_dependents = forms.TypedChoiceField(widget=RadioSelect(renderer=DSRadioFieldRenderer),
-                                            choices=YESNO_CHOICES_1,
+                                            choices=YESNO_CHOICES["Ydy/Nac ydy"],
                                             coerce=to_bool,
                                             label=_("Does this include payment for dependants?"),
                                             error_messages={"required": ERROR_MESSAGES["BENEFITS_DEPENDANTS_REQUIRED"]})
@@ -414,7 +321,7 @@ class YourMoneyForm(SplitPleaStepForm):
     receiving_benefits_hardship = forms.TypedChoiceField(label=_("Would paying a fine cause you serious financial problems?"),
                                                          help_text=_("For example, you would become homeless."),
                                                          widget=RadioSelect(renderer=DSRadioFieldRenderer),
-                                                         choices=YESNO_CHOICES_4,
+                                                         choices=YESNO_CHOICES["Byddai/Na fyddai"],
                                                          coerce=to_bool,
                                                          error_messages={"required": ERROR_MESSAGES["HARDSHIP_REQUIRED"]})
 
@@ -434,12 +341,12 @@ class YourMoneyForm(SplitPleaStepForm):
     other_hardship = forms.TypedChoiceField(label=_("Would paying a fine cause you serious financial problems?"),
                                             help_text=_("For example, you would become homeless."),
                                             widget=RadioSelect(renderer=DSRadioFieldRenderer),
-                                            choices=YESNO_CHOICES_4,
+                                            choices=YESNO_CHOICES["Byddai/Na fyddai"],
                                             coerce=to_bool,
                                             error_messages={"required": ERROR_MESSAGES["HARDSHIP_REQUIRED"]})
 
 
-class YourExpensesForm(BasePleaStepForm):
+class YourExpensesForm(BaseStageForm):
     hardship_details = forms.CharField(
         label=_("How would paying a fine cause you serious financial problems?"),
         help_text=_("What should the court consider when deciding on any possible fine?"),
@@ -501,7 +408,7 @@ class YourExpensesForm(BasePleaStepForm):
     other_bill_payers = forms.TypedChoiceField(
         widget=RadioSelect(renderer=DSRadioFieldRenderer),
         label=_("Does anyone else contribute to these bills?"),
-        choices=YESNO_CHOICES_3,
+        choices=YESNO_CHOICES["Oes/Nac oes"],
         coerce=to_bool,
         error_messages={'required': ERROR_MESSAGES['OTHER_BILL_PAYERS_REQUIRED']})
 
@@ -582,7 +489,7 @@ class YourExpensesForm(BasePleaStepForm):
                         'min_value': ERROR_MESSAGES['OTHER_CHILD_MAINTENANCE_MIN']})
 
 
-class CompanyFinancesForm(SplitPleaStepForm):
+class CompanyFinancesForm(SplitStageForm):
     dependencies = {
         "number_of_employees": {
             "field": "trading_period"
@@ -601,7 +508,7 @@ class CompanyFinancesForm(SplitPleaStepForm):
     }
 
     trading_period = forms.TypedChoiceField(required=True, widget=RadioSelect(renderer=DSRadioFieldRenderer),
-                                            choices=YESNO_CHOICES_1,
+                                            choices=YESNO_CHOICES["Ydy/Nac ydy"],
                                             coerce=to_bool,
                                             label=_("Has the company been trading for more than 12 months?"),
                                             error_messages={"required": ERROR_MESSAGES["COMPANY_TRADING_PERIOD"]})
@@ -647,7 +554,7 @@ class CompanyFinancesForm(SplitPleaStepForm):
             self.fields["net_turnover"].error_messages.update({"required": ERROR_MESSAGES["COMPANY_NET_TURNOVER"]})
 
 
-class ConfirmationForm(BasePleaStepForm):
+class ConfirmationForm(BaseStageForm):
     dependencies = {
         "email": {
             "field": "receive_email_updates",
@@ -658,7 +565,7 @@ class ConfirmationForm(BasePleaStepForm):
     receive_email_updates = forms.TypedChoiceField(widget=RadioSelect(renderer=DSRadioFieldRenderer),
                                                    required=True,
                                                    coerce=to_bool,
-                                                   choices=YESNO_CHOICES_2,
+                                                   choices=YESNO_CHOICES["Ydw/Nac ydw"],
                                                    label=_("Do you want to receive email updates about your case?"),
                                                    help_text=_("We'll use this for all future correspondence as well as contacting you by post."),
                                                    error_messages={"required": ERROR_MESSAGES["RECEIVE_EMAIL_UPDATES_REQUIRED"]})
@@ -674,7 +581,7 @@ class ConfirmationForm(BasePleaStepForm):
                                     error_messages={"required": ERROR_MESSAGES["UNDERSTAND_REQUIRED"]})
 
 
-class PleaForm(SplitPleaStepForm):
+class PleaForm(SplitStageForm):
     PLEA_CHOICES = (
         ('guilty', _('Guilty')),
         ('not_guilty', _('Not guilty')),
@@ -719,7 +626,7 @@ class PleaForm(SplitPleaStepForm):
 
     interpreter_needed = forms.TypedChoiceField(widget=RadioSelect(renderer=DSRadioFieldRenderer),
                                                 required=True,
-                                                choices=YESNO_CHOICES_3,
+                                                choices=YESNO_CHOICES["Oes/Nac oes"],
                                                 coerce=to_bool,
                                                 label=_("Do you need an interpreter in court?"),
                                                 error_messages={"required": ERROR_MESSAGES["INTERPRETER_NEEDED_REQUIRED"]})
