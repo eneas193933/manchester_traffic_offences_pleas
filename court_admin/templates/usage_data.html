@@ -1,0 +1,40 @@
+{% if current_user.is_superuser %}
+<form method="get" action="{{ request.path }}">
+    <select name="court">
+        {% for court in courts %}
+            <option value="{{ court.id }}" {% if selected_court == court %}checked="checked"{% endif %}>
+                {{ court.court_name }}
+            </option>
+        {% endfor %}
+    </select>
+
+   <button type="submit">View</button>
+</form>
+{% endif %}
+
+Court: {{ selected_court.court_name }}
+
+
+
+<form method="post" action="{{ request.path }}">
+    {{ formset.management_form }}
+    <table>
+        <tr>
+            <th>Week</th>
+            <th>Online submissions</th>
+            <th>Online guilty pleas</th>
+            <th>Online not guilty pleas</th>
+            <th>Postal requisitions</th>
+        </tr>
+    {% for form in formset %}
+        <tr>
+            <td></td>
+        {% for field in form %}
+            <td>{{ field }}</td>
+        {% endfor %}
+        </tr>
+    {% endfor %}
+    </table>
+</form>
+
+</form>

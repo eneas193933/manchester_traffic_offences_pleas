@@ -4,6 +4,7 @@ import datetime as dt
 
 from django.db import models
 from django.db.models import Sum, Count, F
+from django.core.exceptions import ImproperlyConfigured
 
 
 STATUS_CHOICES = (("created_not_sent", "Created but not sent"),
@@ -14,7 +15,7 @@ STATUS_CHOICES = (("created_not_sent", "Created but not sent"),
 
 
 class CourtEmailCountManager(models.Manager):
-    def calculate_aggregates(self, start_date, days=7):
+    def calculate_aggregates(self, start_date, court=None, days=7):
         """
         Calculate aggregate stats (subs, guilty pleas, not guilty pleas) over the
         specified date period.
@@ -25,9 +26,13 @@ class CourtEmailCountManager(models.Manager):
         end_datetime = dt.datetime.combine(
             start_date+dt.timedelta(days), dt.datetime.max.time())
 
-        qs = self.filter(
-            hearing_date__gte=start_datetime,
-            hearing_date__lte=end_datetime)
+        filter = dict(hearing_date__gte=start_datetime,
+                      hearing_date__lte=end_datetime)
+
+        if court:
+            filter["court"] = court
+
+        qs = self.filter(**filter)
 
         totals = qs.aggregate(Sum('total_pleas'),
                               Sum('total_guilty'),
@@ -274,7 +279,7 @@ class Offence(models.Model):
 
 class UsageStatsManager(models.Manager):
 
-    def calculate_weekly_stats(self, to_date=None):
+    def calculate_weekly_stats(self, court, to_date=None):
         """
         Occupy UsageStats with the latest weekly aggregate stats.
 
@@ -284,21 +289,26 @@ class UsageStatsManager(models.Manager):
         An associated management command runs this function.
         """
 
+        if not court.live_date:
+            raise ImproperlyConfigured("Set a live date for court {}".format(court.court_name))
+
+        data = self.filter(court=court)
+
         if not to_date:
             to_date = dt.date.today()
 
         try:
-            last_entry = self.latest('start_date')
+            last_entry = data.latest('start_date')
         except UsageStats.DoesNotExist:
-            # arbitrary Monday start date that is before MAP went live
-            start_date = dt.date(2014, 05, 5)
+            start_date = court.live_date
         else:
             start_date = last_entry.start_date + dt.timedelta(7)
 
         while start_date+dt.timedelta(7) <= to_date:
-            totals = CourtEmailCount.objects.calculate_aggregates(start_date, 7)
+            totals = CourtEmailCount.objects.calculate_aggregates(start_date, court=court, days=7)
 
             UsageStats.objects.create(
+                court=court,
                 start_date=start_date,
                 online_submissions=totals['submissions'],
                 online_guilty_pleas=totals['guilty'],
@@ -321,6 +331,8 @@ class UsageStats(models.Model):
     An aggregate table used to store submission data over a 7 day
     period.
     """
+    court = models.ForeignKey("Court")
+
     start_date = models.DateField()
 
     online_submissions = models.PositiveIntegerField(default=0)
@@ -373,6 +385,11 @@ class CourtManager(models.Manager):
 
 
 class Court(models.Model):
+
+    live_date = models.DateTimeField(
+        blank=True, null=True,
+        help_text="The date the court went live")
+
     court_code = models.CharField(
         max_length=100, null=True, blank=True)
 

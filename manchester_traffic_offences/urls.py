@@ -30,4 +30,7 @@ urlpatterns = patterns("",
     url(r"^", include("apps.monitoring.urls")),
     url(r"^test-template/$", views.test_template, name="test_template"),
 
+    # temporarily putting this here, but likely it'll live in its own site/subdomain
+    url(r"^court-admin/", include("court_admin.urls"))
+
 ) + static(settings.MEDIA_URL, document_root=settings.MEDIA_ROOT)

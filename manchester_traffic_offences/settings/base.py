@@ -188,6 +188,7 @@ INSTALLED_APPS = [
     'django.contrib.staticfiles',
     'django.contrib.humanize',
     'django_extensions',
+    'registration',
     'djcelery',
     'waffle',
     'apps.govuk_utils',
@@ -196,6 +197,7 @@ INSTALLED_APPS = [
     'apps.feedback',
     'apps.receipt',
     'django_premailer',
+    'court_admin'
 ]
 
 INSTALLED_APPS
@@ -313,6 +315,16 @@ GPG_HOME_DIRECTORY = os.environ.get('GPG_HOME_DIRECTORY', '/home/vagrant/.gnupg/
 
 ENV_BASE_URL = os.environ.get("ENV_BASE_URL", "")
 FTP_SERVER_IP = os.environ.get("FTP_SERVER_IP", "")
+
+PASSWORD_MIN_LENGTH = 8
+PASSWORD_MAX_LENGTH = 120
+
+PASSWORD_COMPLEXITY = {
+    "UPPER": 1,
+    "LOWER": 1,
+    "DIGITS": 1,
+    "PUNCTUATION": 1
+}
 
 # .local.py overrides all the common settings.
 try:
