@@ -1,3 +1,17 @@
+<style>
+
+    table.default td {
+        padding: 5px;
+        border: 1px solid black;
+        text-align: center;
+    }
+
+    table.default td input {
+        padding: 5px;
+    }
+
+</style>
+
 {% if current_user.is_superuser %}
 <form method="get" action="{{ request.path }}">
     <select name="court">
@@ -14,27 +28,42 @@
 
 Court: {{ selected_court.court_name }}
 
+{% if messages %}
+<ul class="messages">
+    {% for message in messages %}
+    <li{% if message.tags %} class="{{ message.tags }}"{% endif %}>{{ message }}</li>
+    {% endfor %}
+</ul>
+{% endif %}
 
 
 <form method="post" action="{{ request.path }}">
     {{ formset.management_form }}
-    <table>
+    <table class="default">
         <tr>
-            <th>Week</th>
+            <th>Start Date</th>
+            <th>Week #</th>
             <th>Online submissions</th>
             <th>Online guilty pleas</th>
             <th>Online not guilty pleas</th>
             <th>Postal requisitions</th>
+            <th>Postal responses</th>
         </tr>
     {% for form in formset %}
-        <tr>
-            <td></td>
-        {% for field in form %}
-            <td>{{ field }}</td>
-        {% endfor %}
-        </tr>
+        {% with data=form.instance %}
+            {{ form.id }}
+            <tr>
+                <td>{{ data.start_date|date:"d M Y" }}</td>
+                <td>{{ data.start_date|date:"W" }}</td>
+                <td>{{ data.online_submissions }}</td>
+                <td>{{ data.online_guilty_pleas }}</td>
+                <td>{{ data.online_not_guilty_pleas }}</td>
+                <td>{{ form.postal_requisitions}}</td>
+                <td>{{ form.postal_responses }}</td>
+            </tr>
+        {% endwith %}
     {% endfor %}
     </table>
-</form>
-
+    <button type="submit">Update court usage data</button>
+    {% csrf_token %}
 </form>

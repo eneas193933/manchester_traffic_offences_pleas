@@ -1,6 +1,8 @@
 import datetime as dt
 
+from django.contrib.auth.models import AbstractUser
 from django.db import models
+
 
 class Invite(models.Model):
 
@@ -19,3 +21,13 @@ class Invite(models.Model):
 
     def send_invitation_email(self):
         pass
+
+
+class User(AbstractUser):
+
+    court = models.ForeignKey(
+        "apps.plea.Court", blank=True, null=True,
+        help_text="The court region associated with this user")
+
+    class Meta:
+        db_table = "auth_user"

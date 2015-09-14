@@ -7,7 +7,7 @@ from views import UsageStatsView
 
 
 urlpatterns = patterns("",
-    (r'^accounts/', include('registration.backends.default.urls')),
-    (r'^$', UsageStatsView.as_view()))
+    (r'^$', UsageStatsView.as_view()),
+    (r'^', include('registration.backends.default.urls')),)
 
 
