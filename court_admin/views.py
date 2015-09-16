@@ -2,6 +2,7 @@ from django.views.generic import TemplateView
 from django.forms.models import modelformset_factory
 from django.contrib import messages
 from django.contrib.auth.decorators import login_required
+from django.http import HttpResponseForbidden
 from django.utils.decorators import method_decorator
 
 from apps.plea.models import Court, UsageStats
@@ -10,7 +11,7 @@ from apps.plea.models import Court, UsageStats
 class UsageStatsView(TemplateView):
     template_name = "usage_data.html"
 
-    def _get_formset(self, *args, **kwargs):
+    def _get_formset(self, court, *args, **kwargs):
         usage_formset = modelformset_factory(
             UsageStats,
             fields=("postal_requisitions", "postal_responses",),
@@ -18,14 +19,14 @@ class UsageStatsView(TemplateView):
 
         form_kwargs = {
             "initial": 0,
-            "queryset": UsageStats.objects.filter(court=self.get_selected_court())
+            "queryset": UsageStats.objects.filter(court=court)
         }
 
         form_kwargs.update(kwargs)
 
         return usage_formset(*args, **form_kwargs)
 
-    def get_selected_court(self):
+    def get_selected_court(self, court_id=None):
         """
         If superuser, then the user can access any court.
 
@@ -33,34 +34,43 @@ class UsageStatsView(TemplateView):
 
         """
 
-        return Court.objects.all()[0]
+        #raise HttpResponseForbidden
+
+        if not court_id:
+            return Court.objects.all().first()
+        else:
+            return Court.objects.get(pk=court_id)
 
     def get(self, request, *args, **kwargs):
 
         # the following would happen via a cron task to keep the dashboard updated
         # with online data
-        UsageStats.objects.calculate_weekly_stats(self.get_selected_court())
+        court = self.get_selected_court(kwargs.get("court_id", None))
+        UsageStats.objects.calculate_weekly_stats(court)
 
-        kwargs["formset"] = self._get_formset()
+        kwargs["formset"] = self._get_formset(court)
+        kwargs["selected_court"] = court
 
         return super(UsageStatsView, self).get(request, *args, **kwargs)
 
     def post(self, request, *args, **kwargs):
 
-        formset = self._get_formset(request.POST)
+        court = self.get_selected_court(kwargs.get("court_id", None))
+
+        formset = self._get_formset(court, request.POST)
 
         if formset.is_valid():
             formset.save()
             messages.info(request, "Court statistics have been updated.")
 
         kwargs["formset"] = formset
+        kwargs["selected_court"] = court
 
         return super(UsageStatsView, self).get(request, *args, **kwargs)
 
     def get_context_data(self, **kwargs):
         context = super(UsageStatsView, self).get_context_data(**kwargs)
 
-        context["selected_court"] = Court.objects.all()[0]
         context["courts"] = Court.objects.all()
 
         return context

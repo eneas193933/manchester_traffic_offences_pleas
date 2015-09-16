@@ -386,7 +386,7 @@ class CourtManager(models.Manager):
 
 class Court(models.Model):
 
-    live_date = models.DateTimeField(
+    live_date = models.DateField(
         blank=True, null=True,
         help_text="The date the court went live")
 

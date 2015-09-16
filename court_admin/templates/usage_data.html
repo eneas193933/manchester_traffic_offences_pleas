@@ -1,5 +1,17 @@
 {% extends "base.html" %}
 
+{% block javascripts %}
+    {{ block.super }}
+
+    <script>
+        $(document).ready(function(){
+           $("#court-selector").change(function(){
+               window.location = $(this).val();
+           });
+        });
+    </script>
+{% endblock %}
+
 {% block content %}
 
 <style>
@@ -16,37 +28,37 @@
 
 </style>
 
-<p>
-    You are logged in as: {{ user.email }} |
-    <a href="{% url 'logout' %}">logout</a> |
-    <a href="{% url 'password_change' %}">change password</a>
-</p>
+<table>
+    <tr>
+        <td>
+            <select id="court-selector">
+                {% for court in courts %}
+                <option value="{% url 'usage_stats' court_id=court.id %}" {% if selected_court == court %}selected="selected" {% endif %}>
+                    {{ court.court_name }}
+                </option>
+                {% endfor %}
+            </select>
+        </td>
+        <td style="text-align: right">
+            You are logged in as: {{ user.email }} |
+            <a href="{% url 'logout' %}">logout</a> |
+            <a href="{% url 'password_change' %}">change password</a>
+        </td>
+    </tr>
+</table>
+
+
 
 <p>
-Your court/region is: {{ selected_court.court_name }}
+    Your court/region is: {{ selected_court.court_name }}
 </p>
-
-
-
-{% if current_user.is_superuser %}
-<form method="get" action="{{ request.path }}">
-    <select name="court">
-        {% for court in courts %}
-            <option value="{{ court.id }}" {% if selected_court == court %}checked="checked"{% endif %}>
-                {{ court.court_name }}
-            </option>
-        {% endfor %}
-    </select>
-
-   <button type="submit">View</button>
-</form>
-{% endif %}
 
 
 {% if messages %}
 <ul class="messages">
     {% for message in messages %}
-    <li{% if message.tags %} class="{{ message.tags }}"{% endif %}>{{ message }}</li>
+    <li
+    {% if message.tags %} class="{{ message.tags }}"{% endif %}>{{ message }}</li>
     {% endfor %}
 </ul>
 {% endif %}
@@ -64,20 +76,20 @@ Your court/region is: {{ selected_court.court_name }}
             <th>Postal requisitions</th>
             <th>Postal responses</th>
         </tr>
-    {% for form in formset %}
+        {% for form in formset %}
         {% with data=form.instance %}
-            {{ form.id }}
-            <tr>
-                <td>{{ data.start_date|date:"d M Y" }}</td>
-                <td>{{ data.start_date|date:"W" }}</td>
-                <td>{{ data.online_submissions }}</td>
-                <td>{{ data.online_guilty_pleas }}</td>
-                <td>{{ data.online_not_guilty_pleas }}</td>
-                <td>{{ form.postal_requisitions}}</td>
-                <td>{{ form.postal_responses }}</td>
-            </tr>
+        {{ form.id }}
+        <tr>
+            <td>{{ data.start_date|date:"d M Y" }}</td>
+            <td>{{ data.start_date|date:"W" }}</td>
+            <td>{{ data.online_submissions }}</td>
+            <td>{{ data.online_guilty_pleas }}</td>
+            <td>{{ data.online_not_guilty_pleas }}</td>
+            <td>{{ form.postal_requisitions}}</td>
+            <td>{{ form.postal_responses }}</td>
+        </tr>
         {% endwith %}
-    {% endfor %}
+        {% endfor %}
     </table>
     <button type="submit">Update court usage data</button>
     {% csrf_token %}

@@ -12,6 +12,9 @@ urlpatterns = patterns("",
     url(r"^$", UsageStatsView.as_view(),
         name="usage_stats"),
 
+    url(r"^(?P<court_id>\d+)/$", UsageStatsView.as_view(),
+        name="usage_stats"),
+
     url(r"^admin/", include(court_admin.urls)),
 
     # django auth views
