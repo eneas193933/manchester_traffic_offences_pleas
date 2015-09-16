@@ -179,6 +179,7 @@ TEMPLATE_CONTEXT_PROCESSORS = [
 ]
 
 INSTALLED_APPS = [
+    'court_admin',
     'django.contrib.admin',
     'django.contrib.auth',
     'django.contrib.contenttypes',
@@ -188,7 +189,6 @@ INSTALLED_APPS = [
     'django.contrib.staticfiles',
     'django.contrib.humanize',
     'django_extensions',
-    'registration',
     'djcelery',
     'waffle',
     'apps.govuk_utils',
@@ -197,7 +197,6 @@ INSTALLED_APPS = [
     'apps.feedback',
     'apps.receipt',
     'django_premailer',
-    'court_admin'
 ]
 
 INSTALLED_APPS
@@ -325,6 +324,10 @@ PASSWORD_COMPLEXITY = {
     "DIGITS": 1,
     "PUNCTUATION": 1
 }
+
+# for court-admin - may need to be moved to its own settings file when we figure out whwere the app will live
+LOGIN_REDIRECT_URL = "/court-admin/"
+LOGIN_URL = "/court-admin/login/"
 
 # .local.py overrides all the common settings.
 try:

@@ -1,3 +1,7 @@
+{% extends "base.html" %}
+
+{% block content %}
+
 <style>
 
     table.default td {
@@ -11,6 +15,18 @@
     }
 
 </style>
+
+<p>
+    You are logged in as: {{ user.email }} |
+    <a href="{% url 'logout' %}">logout</a> |
+    <a href="{% url 'password_change' %}">change password</a>
+</p>
+
+<p>
+Your court/region is: {{ selected_court.court_name }}
+</p>
+
+
 
 {% if current_user.is_superuser %}
 <form method="get" action="{{ request.path }}">
@@ -26,7 +42,6 @@
 </form>
 {% endif %}
 
-Court: {{ selected_court.court_name }}
 
 {% if messages %}
 <ul class="messages">
@@ -42,7 +57,7 @@ Court: {{ selected_court.court_name }}
     <table class="default">
         <tr>
             <th>Start Date</th>
-            <th>Week #</th>
+            <th>Week number</th>
             <th>Online submissions</th>
             <th>Online guilty pleas</th>
             <th>Online not guilty pleas</th>
@@ -67,3 +82,5 @@ Court: {{ selected_court.court_name }}
     <button type="submit">Update court usage data</button>
     {% csrf_token %}
 </form>
+
+{% endblock %}
