@@ -1,0 +1,22 @@
+{% extends "base.html" %}
+
+{% block content %}
+    <h1>Registration</h1>
+
+    {% include "messages.html" %}
+
+    {% if form %}
+
+    <p>Enter your details in the form below to complete your registration.</p>
+
+    <p>Your court/region: {{ court_name }}</p>
+
+    <form method="post" action="{{ request.path }}">{% csrf_token %}
+
+        {{ form.as_p }}
+
+        <button type="submit">Complete registration</button>
+    </form>
+
+    {% endif %}
+{% endblock %}

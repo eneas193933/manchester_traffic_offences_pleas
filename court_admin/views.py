@@ -1,11 +1,15 @@
-from django.views.generic import TemplateView
+from django.core.exceptions import PermissionDenied
+from django.shortcuts import redirect
+from django.views.decorators.debug import sensitive_post_parameters
+from django.views.generic import TemplateView, FormView
 from django.forms.models import modelformset_factory
 from django.contrib import messages
-from django.contrib.auth.decorators import login_required
-from django.http import HttpResponseForbidden
 from django.utils.decorators import method_decorator
+from django.contrib.auth.models import User, Permission
 
 from apps.plea.models import Court, UsageStats
+from court_admin.decorators import court_staff_user_required, court_admin_user_required
+from court_admin.forms import InviteUserForm, EmailNotAvailable, RegistrationForm
 
 
 class UsageStatsView(TemplateView):
@@ -14,7 +18,7 @@ class UsageStatsView(TemplateView):
     def _get_formset(self, court, *args, **kwargs):
         usage_formset = modelformset_factory(
             UsageStats,
-            fields=("postal_requisitions", "postal_responses",),
+            fields=("postal_requisitions", "postal_responses"),
             extra=0)
 
         form_kwargs = {
@@ -27,19 +31,23 @@ class UsageStatsView(TemplateView):
         return usage_formset(*args, **form_kwargs)
 
     def get_selected_court(self, court_id=None):
-        """
-        If superuser, then the user can access any court.
 
-        If admin, then they are restricted to the court on their profile
+        try:
+            user_court = self.request.user.courtadminprofile.court
+        except AttributeError:
+            raise PermissionDenied
 
-        """
-
-        #raise HttpResponseForbidden
-
-        if not court_id:
-            return Court.objects.all().first()
+        if court_id:
+            selected_court = Court.objects.get(pk=court_id)
         else:
-            return Court.objects.get(pk=court_id)
+            selected_court = None
+
+        user_is_admin = self.request.user.is_superuser
+
+        if user_is_admin and selected_court:
+            return selected_court
+        else:
+            return user_court
 
     def get(self, request, *args, **kwargs):
 
@@ -75,7 +83,103 @@ class UsageStatsView(TemplateView):
 
         return context
 
-    @method_decorator(login_required)
+    @method_decorator(court_staff_user_required)
     def dispatch(self, *args, **kwargs):
         return super(UsageStatsView, self).dispatch(*args, **kwargs)
 
+
+class InviteUserView(FormView):
+    template_name = "court_registration/invite_user.html"
+    form_class = InviteUserForm
+
+    def form_valid(self, form):
+
+        try:
+            user = form.create_user_from_form(form)
+        except EmailNotAvailable:
+            messages.error(self.request, "Error - a user with that email already exists.")
+
+            return self.render_to_response(self.get_context_data(form=form))
+
+        else:
+            form.send_invite_email(user)
+            messages.info(self.request, "An invitation has been sent to {}".format(user.email))
+
+        self.success_url = self.request.path
+
+        return super(InviteUserView, self).form_valid(form)
+
+    @method_decorator(court_admin_user_required)
+    def dispatch(self, *args, **kwargs):
+        return super(InviteUserView, self).dispatch(*args, **kwargs)
+
+
+class RegisterView(TemplateView):
+    template_name = "court_registration/register.html"
+
+    def get(self, request, *args, **kwargs):
+
+        uid64 = kwargs["uidb64"]
+        token = kwargs["token"]
+
+        valid_token, user = RegistrationForm.verify_token(uid64, token)
+
+        if not valid_token:
+            messages.error(request, "This registration request is invalid. "
+                                    "It may have expired or it may have already been used.")
+
+            return super(RegisterView, self).get(request, *args, **kwargs)
+
+        context = {
+            "user": user,
+            "form": RegistrationForm(initial={"first_name": user.first_name, "last_name": user.last_name})
+        }
+
+        kwargs.update(context)
+
+        return super(RegisterView, self).get(request, *args, **kwargs)
+
+    #@method_decorator(sensitive_post_parameters)
+    def post(self, request, *args, **kwargs):
+
+        uid64 = kwargs["uidb64"]
+        token = kwargs["token"]
+
+        valid_token, user = RegistrationForm.verify_token(uid64, token)
+
+        if not valid_token:
+            messages.error(request, "This registration request is invalid. "
+                                    "It may have expired or it may have already been used.")
+
+            return super(RegisterView, self).get(request, *args, **kwargs)
+
+        form = RegistrationForm(request.POST)
+
+        kwargs["form"] = form
+
+        if form.is_valid():
+            form.activate_user(user)
+
+            return redirect("register_done")
+        else:
+            return super(RegisterView, self).get(request, *args, **kwargs)
+
+
+class CourtAdminListView(TemplateView):
+    template_name = "court_user_list.html"
+
+    def _get_users(self):
+
+        court_staff_perm = Permission.objects.get(codename="court_staff_user")
+
+        return User.objects.filter(user_permissions=court_staff_perm)
+
+    def get(self, request, *args, **kwargs):
+
+        kwargs["users"] = self._get_users()
+
+        return super(CourtAdminListView, self).get(request, *args, **kwargs)
+
+    @method_decorator(court_admin_user_required)
+    def dispatch(self, *args, **kwargs):
+        return super(CourtAdminListView, self).dispatch(*args, **kwargs)

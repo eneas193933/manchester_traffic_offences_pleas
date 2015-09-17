@@ -26,18 +26,27 @@
         padding: 5px;
     }
 
+    table.default tr.require-data td{
+        background-color: #FFE4E1;
+    }
+
 </style>
 
 <table>
     <tr>
         <td>
+            {% if user.is_superuser %}
             <select id="court-selector">
                 {% for court in courts %}
                 <option value="{% url 'usage_stats' court_id=court.id %}" {% if selected_court == court %}selected="selected" {% endif %}>
                     {{ court.court_name }}
                 </option>
                 {% endfor %}
-            </select>
+            </select> |
+
+            <a href="{% url 'invite_users' %}">Invite users</a> |
+            <a href="{% url 'court_admin_list' %}">View users</a>
+            {% endif %}
         </td>
         <td style="text-align: right">
             You are logged in as: {{ user.email }} |
@@ -54,14 +63,7 @@
 </p>
 
 
-{% if messages %}
-<ul class="messages">
-    {% for message in messages %}
-    <li
-    {% if message.tags %} class="{{ message.tags }}"{% endif %}>{{ message }}</li>
-    {% endfor %}
-</ul>
-{% endif %}
+{% include "messages.html" %}
 
 
 <form method="post" action="{{ request.path }}">
@@ -79,7 +81,7 @@
         {% for form in formset %}
         {% with data=form.instance %}
         {{ form.id }}
-        <tr>
+        <tr {% if not data.has_court_data %}class="require-data"{% endif %}>
             <td>{{ data.start_date|date:"d M Y" }}</td>
             <td>{{ data.start_date|date:"W" }}</td>
             <td>{{ data.online_submissions }}</td>

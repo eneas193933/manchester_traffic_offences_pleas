@@ -1,9 +1,18 @@
 from django.contrib import admin
-from django.contrib.admin.sites import AdminSite
+from django.contrib.auth.admin import UserAdmin
+from django.contrib.auth.models import User
+from models import CourtAdminProfile
 
 
-class CourtAdmin(AdminSite):
-    pass
+admin.site.unregister(User)
 
-court_admin = CourtAdmin()
+class UserProfileAdmin(admin.StackedInline):
+    model = CourtAdminProfile
+    max_num = 1
+    can_delete = False
 
+
+class UserAdmin(admin.ModelAdmin):
+    inlines = [UserProfileAdmin, ]
+
+admin.site.register(User, UserAdmin)

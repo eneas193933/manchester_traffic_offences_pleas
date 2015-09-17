@@ -348,6 +348,9 @@ class UsageStats(models.Model):
         ordering = ('start_date',)
         verbose_name_plural = "Usage Stats"
 
+    def has_court_data(self):
+        return self.postal_requisitions is not None and self.postal_responses is not None
+
 
 class CourtManager(models.Manager):
     def has_court(self, urn):
@@ -450,10 +453,10 @@ class Court(models.Model):
                                      self.region_code,
                                      self.court_name)
 
+    class Meta:
+        permissions = (
+            ("court_staff_user", "Court staff user"),
+            ("court_staff_admin", "Court staff admin user")
+        )
+
     objects = CourtManager()
-
-
-
-
-
-
