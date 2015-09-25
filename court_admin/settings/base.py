@@ -13,8 +13,6 @@ DATABASES = {
     }
 }
 
-INSTALLED_APPS.append("court_admin")
-
 del TEMPLATE_CONTEXT_PROCESSORS[TEMPLATE_CONTEXT_PROCESSORS.index('apps.feedback.context_processors.feedback')]
 
 # for court-admin - may need to be moved to its own settings file when we figure out whwere the app will live

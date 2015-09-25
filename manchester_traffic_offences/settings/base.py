@@ -194,6 +194,7 @@ INSTALLED_APPS = [
     'apps.feedback',
     'apps.receipt',
     'django_premailer',
+    'court_admin',
 ]
 
 LOGGING = {
