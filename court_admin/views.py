@@ -32,20 +32,23 @@ class UsageStatsView(TemplateView):
 
     def get_selected_court(self, court_id=None):
 
+        user = self.request.user
+
+        user_court, selected_court = None, None
+
+        is_court_admin = user.has_perm("plea.court_staff_admin") or user.is_superuser
+
         try:
-            user_court = self.request.user.courtadminprofile.court
+            user_court = user.courtadminprofile.court
         except AttributeError:
-            raise PermissionDenied
+            if not is_court_admin:
+                raise PermissionDenied
 
         if court_id:
             selected_court = Court.objects.get(pk=court_id)
-        else:
-            selected_court = None
 
-        user_is_admin = self.request.user.is_superuser
-
-        if user_is_admin and selected_court:
-            return selected_court
+        if is_court_admin:
+            return selected_court or user_court or Court.objects.all().first()
         else:
             return user_court
 
