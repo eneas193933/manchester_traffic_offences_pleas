@@ -144,7 +144,7 @@ MIDDLEWARE_CLASSES = (
 ROOT_URLCONF = 'manchester_traffic_offences.urls'
 
 SESSION_SERIALIZER = 'apps.govuk_utils.serializers.DateAwareSerializer'
-SESSION_ENGINE = 'encrypted_cookies'
+SESSION_ENGINE = 'django.contrib.sessions.backends.signed_cookies'
 SESSION_COOKIE_HTTPONLY = True
 SESSION_EXPIRE_AT_BROWSER_CLOSE = True
 SESSION_COOKIE_AGE = 3600
@@ -269,6 +269,7 @@ EMAIL_PORT = os.environ.get("EMAIL_PORT", 25)
 EMAIL_HOST_USER = os.environ.get("EMAIL_HOST_USER", "")
 EMAIL_HOST_PASSWORD = os.environ.get("EMAIL_HOST_PASSWORD", "")
 EMAIL_USE_TLS = True
+EMAIL_TIMEOUT = 60
 
 # Full plea email sent to court mailbox
 PLEA_EMAIL_FROM = os.environ.get("PLEA_EMAIL_FROM", "plea_from@example.org")

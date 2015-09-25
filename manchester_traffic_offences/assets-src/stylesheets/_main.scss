@@ -1,4 +1,4 @@
-/*  
+/*
 ====================================================
 Main styles
 ====================================================
@@ -29,24 +29,6 @@ Main styles
 
 	fieldset {
 		position: relative;
-	}
-
-	.label-line {
-		position: relative;
-
-		&:before {
-			content: "";
-			position: absolute;
-			width: 100%;
-			border-top: 2px solid $grey-2;
-			bottom: .575em;
-		}
-
-		.label-text {
-			position: relative;
-			padding-right: 10px;
-			background: #fff;
-		}
 	}
 }
 
@@ -148,14 +130,17 @@ Main styles
 			@include media(tablet) {
 				width: 30%;
 			}
-
-			color: $grey-1;
 		}
 	}
 
-	h3 {
-		@include core-24;
-		margin: 0;
+	.charge-heading {
+		padding-top: 1.25em;
+		padding-bottom: 0;
+
+		h3 {
+			@include bold-19();
+			margin: 0;
+		}
 	}
 }
 
