@@ -37,8 +37,6 @@ RAVEN_CONFIG = {
     'dsn': os.environ.get("RAVEN_DSN", ""),
 }
 
-
-
 # Hosts/domain names that are valid for this site; required if DEBUG is False
 # See https://docs.djangoproject.com/en/1.5/ref/settings/#allowed-hosts
 ALLOWED_HOSTS = []
@@ -179,7 +177,6 @@ TEMPLATE_CONTEXT_PROCESSORS = [
 ]
 
 INSTALLED_APPS = [
-    'court_admin',
     'django.contrib.admin',
     'django.contrib.auth',
     'django.contrib.contenttypes',
@@ -199,13 +196,6 @@ INSTALLED_APPS = [
     'django_premailer',
 ]
 
-INSTALLED_APPS
-
-# A sample logging configuration. The only tangible logging
-# performed by this configuration is to send an email to
-# the site admins on every HTTP 500 error when DEBUG=False.
-# See http://docs.djangoproject.com/en/dev/topics/logging for
-# more details on how to customize your logging configuration.
 LOGGING = {
     'version': 1,
     'disable_existing_loggers': False,
@@ -314,20 +304,6 @@ GPG_HOME_DIRECTORY = os.environ.get('GPG_HOME_DIRECTORY', '/home/vagrant/.gnupg/
 
 ENV_BASE_URL = os.environ.get("ENV_BASE_URL", "")
 FTP_SERVER_IP = os.environ.get("FTP_SERVER_IP", "")
-
-PASSWORD_MIN_LENGTH = 8
-PASSWORD_MAX_LENGTH = 120
-
-PASSWORD_COMPLEXITY = {
-    "UPPER": 1,
-    "LOWER": 1,
-    "DIGITS": 1,
-    "PUNCTUATION": 1
-}
-
-# for court-admin - may need to be moved to its own settings file when we figure out whwere the app will live
-LOGIN_REDIRECT_URL = "/court-admin/"
-LOGIN_URL = "/court-admin/login/"
 
 # .local.py overrides all the common settings.
 try:

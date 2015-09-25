@@ -28,9 +28,6 @@ urlpatterns = patterns("",
     url(r"^set-a11y-testing/$", views.set_a11y_testing, name="set_a11y_testing"),
     url(r"^session-timeout/$", TemplateView.as_view(template_name="session_timeout.html"), name="session_timeout"),
     url(r"^", include("apps.monitoring.urls")),
-    url(r"^test-template/$", views.test_template, name="test_template"),
-
-    # temporarily putting this here, but likely it'll live in its own site/subdomain
-    url(r"^court-admin/", include("court_admin.urls"))
+    url(r"^test-template/$", views.test_template, name="test_template")
 
 ) + static(settings.MEDIA_URL, document_root=settings.MEDIA_ROOT)

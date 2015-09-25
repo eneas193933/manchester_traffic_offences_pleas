@@ -59,6 +59,7 @@ venv
 
 manchester_traffic_offences/settings/local.py
 api/settings/local.py
+court_admin/settings/local.py
 manchester_traffic_offences/settings/production.py
 
 # collect static output directory

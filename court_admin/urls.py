@@ -26,7 +26,7 @@ urlpatterns = patterns("",
         name='login'),
 
     url(r'^logout/$', auth_views.logout_then_login,
-        {"login_url": "/court-admin/login/"},
+        {"login_url": "/login/"},
         name='logout'),
 
     url(r'^password-change/$', auth_views.password_change,
