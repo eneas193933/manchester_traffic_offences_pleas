@@ -69,6 +69,7 @@ class CaseStage(FormStage):
 
     def save(self, form_data, next_step=None):
         clean_data = super(CaseStage, self).save(form_data, next_step)
+        print clean_data
 
         if "urn" in clean_data:
             clean_data["urn"] = slashify_urn(standardise_urn(clean_data["urn"]))

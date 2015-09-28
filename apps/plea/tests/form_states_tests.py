@@ -39,10 +39,10 @@ class StateMachineTestsWithData(TestCase):
 
     def test_use_defendant_path(self):
         m = PleaStates(state_data={"case_stage": self.get_good_case_data()})
-        m.move_to_next()
+        m.init()
         self.assertEqual(m.state.name, "defendant_details")
 
     def test_use_company_path(self):
         m = PleaStates(state_data={"case_stage": self.get_good_case_data({"plea_made_by": "Company representative"})})
-        m.move_to_next()
+        m.init()
         self.assertEqual(m.state.name, "company_details")

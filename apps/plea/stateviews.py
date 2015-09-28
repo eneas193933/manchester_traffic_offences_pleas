@@ -7,25 +7,29 @@ from django.core.urlresolvers import reverse
 from form_states import PleaStates
 
 @never_cache
-def state_view(request, stage=None):
-    if stage is None:
-            stage = "case"
-
+def state_view(request, state=None):
     # Run forwards through journey and if the best state isn't the one
     # we're currently on then redirect to it.
     data = request.session.get("state_data", {})
-    plea = PleaStates(state_data=data)
-    plea.move_to_best()
+    sm = PleaStates(state_data=data)
+    sm.init(state)
 
-    if plea.state.name != stage:
-        return HttpResponseRedirect(reverse("state_form_step", kwargs={"stage": plea.state.name}))
+    if sm.state.name != state:
+        return HttpResponseRedirect(reverse("state_form_step", kwargs={"state": sm.state.name}))
 
     if request.method == "POST":
-        if plea.move_to_next(request.POST):
-            return HttpResponseRedirect('/')
+        data = sm.move(request.POST)
+        if data["valid"] == True:
+            request.session["state_data"] = sm.state_data
+            return HttpResponseRedirect(reverse("state_form_step", kwargs={"state": sm.state.name}))
+        else:
+            form = sm.state.form
+    else:
+        sm.state.load()
+        form = sm.state.form
 
-    data["form"] = plea.state.form
+    data["form"] = form
     ctxt = RequestContext(request, data)
-    template = loader.get_template(plea.state.template)
+    template = loader.get_template(sm.state.template)
     return HttpResponse(template.render(ctxt))
 

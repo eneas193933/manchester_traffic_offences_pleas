@@ -37,6 +37,9 @@ class BaseState(object):
             return self.label
         return self.name
 
+    def init(self, **kwargs):
+        pass
+
     def exit(self, target_state, *args, **kwargs):
         """
         Checks states and exits if possible, if not possible it raises FSM_TransitionNotAllowed
@@ -61,43 +64,55 @@ class BaseState(object):
                 self.entry_action(exited_state, *args, **kwargs)
 
 
-class StateWithData(BaseState):
+class StateWithForm(BaseState):
     form_class = None
     template = None
 
-    def __init__(self, *args, **kwargs):
-        super(StateWithData, self).__init__(*args, **kwargs)
-        self._loaded = False
-
-    def _all_data(self):
+    @property
+    def my_data(self):
         return self.all_data.get(self.name, {})
 
-    def load(self, all_data):
-        self.all_data = all_data
-
+    def verify(self):
         if self.form_class is not None:
-            if self.name in all_data:
-                self.form = self.form_class(initial=all_data[self.name])
+            my_data = self.my_data
+            self.form = self.form_class(data=my_data)
+            if self.form.is_valid():
+                my_data["valid"] = True
+                return True
             else:
-                self.form = self.form_class()
-        else:
-            self.form = None
+                self.form = self.form_class(initial=my_data)
 
-        self._loaded = True
+        return True
+
+    def load(self):
+        """
+        Loads the state, returns a form with initial set to the data
+        stored in the key in self.data for this state. If form_class
+        is None then None is returned.
+
+        :return: form
+        """
+        if self.form_class is not None:
+            self.form = self.form_class(initial=self.my_data)
 
     def save(self, post_data=None):
-        if post_data is None:
-            state_data = self.all_data.get(self.name, {})
-        else:
-            state_data = post_data
+        """
+        Validates the form with post_data and returns the data with
+        valid=True set.
+
+        :param post_data: a dict containing values to validate
+        :return: the validated data or None if invalid
+        """
+        if post_data is None: post_data = {}
+        save_data = {"valid": False}
 
         if self.form_class is not None:
-            self.form = self.form_class(data=state_data)
+            self.form = self.form_class(data=post_data)
 
-        if self.form is None:
-            return True
-        elif self.form.is_valid():
-            self.all_data[self.name] = self.form.cleaned_data
-            return True
+            if self.form.is_valid():
+                save_data = self.form.cleaned_data
+                save_data["valid"] = True
         else:
-            return False
+            save_data = {"valid": True}
+
+        return save_data

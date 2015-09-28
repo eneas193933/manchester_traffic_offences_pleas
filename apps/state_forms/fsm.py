@@ -72,7 +72,7 @@ class BaseFSM(object):
     Simple FSM implementation with a declarative approach in-keeping with
     the Django style.
     """
-    def __init__(self, verify_on_execute=True, initial_state=None):
+    def __init__(self, verify_on_execute=True, initial_state=None, **kwargs):
         self.states = deepcopy(self.base_states)
 
         try:
@@ -84,7 +84,7 @@ class BaseFSM(object):
         self.verify_on_execute = verify_on_execute
 
         if initial_state is not None:
-            self.set_initial_state(initial_state)
+            self.set_initial_state(initial_state, **kwargs)
 
     def __unicode__(self):
         return self.__state
@@ -181,17 +181,19 @@ class FSM(BaseFSM):
     __metaclass__ = DeclarativeStatesMetaclass
 
 
-class ConditionalFSM(BaseFSM):
+class FormBasedFSM(BaseFSM):
     __metaclass__ = DeclarativeStatesMetaclass
 
     def __init__(self, state_data, *args, **kwargs):
-        super(ConditionalFSM, self).__init__(*args, **kwargs)
+        super(FormBasedFSM, self).__init__(*args, **kwargs)
 
         def make_condition(operator, operands):
             c = [operator, ] + operands
             return c
 
         self.state_data = state_data
+
+        self._init_states()
 
         self.exit_state_conditions = {}
         for name, state in self.states.items():
@@ -209,27 +211,14 @@ class ConditionalFSM(BaseFSM):
                     else:
                         self.exit_state_conditions[state.name].append({e_state: terms})
 
-        self.state.load(self.state_data)
+        self.state.all_data = self.state_data
 
-    def invalidate_state_data(self):
-        for key, value in self.state_data.items():
-            value["valid"] = False
+    def _init_states(self):
+        pass
 
-    def move_to_best(self):
-        """
-        Starts at the beginning of the journey and
-        :return:
-        """
-        # Invalidate all the states and move to the start
-        self.invalidate_state_data()
-        self.set_initial_state(self.states.keys()[0])
-
-        print self.state.name, self.state.all_data
-        while(self.move_to_next(save=False)):
-            print self.state.name, self.state
-
-    def move_to_next(self, new_data=None, save=True):
+    def _get_next_state(self):
         next_state = None
+        current_state = self.state.name
 
         # Check if the data meets any of our conditions
         for condition in self.exit_state_conditions.get(self.state.name, {}):
@@ -242,19 +231,58 @@ class ConditionalFSM(BaseFSM):
         # If the data doesn't meet any conditions choose the first unconditional
         # exit state
         if next_state is None:
-            conditional_states = [s.keys()[0] for s in self.exit_state_conditions.get(self.state.name, {})]
+            conditions = self.exit_state_conditions.get(self.state.name, {})
+            conditional_states = [s.keys()[0] for s in conditions]
             available_states = list(set(self.state.exit_states) - set(conditional_states))
 
             if available_states:
                 next_state = available_states[0]
 
-        if next_state is not None:
-            self.state.load(self.state_data)
+        return self.states.get(next_state)
 
-            if save:
-                if not self.state.save(new_data):
-                    return False
+    def _invalidate_states_data(self):
+        for key, value in self.state_data.items():
+            value["valid"] = False
 
-            self.state_data = self.state.all_data
-            self.change(next_state)
-            return True
+    def change(self, new_state=None, *args, **kwargs):
+        super(FormBasedFSM, self).change(new_state, *args, **kwargs)
+        self.state.all_data = self.state_data
+
+    def init(self, state=None):
+        """
+        Starts at the beginning of the journey and moves through
+        all the states until it finds an invalid one or arrives at
+        the requested_state
+        :return:
+        """
+        current = self.states.keys()[0]
+
+        # If we're already where we need to be then return
+        if state == current:
+            return
+
+        # Invalidate all the states and move to the start
+        self._invalidate_states_data()
+
+        while(True):
+            next = self._get_next_state()
+            verified = self.state.verify()
+            if current == state or not verified:
+                break
+
+            self.change(next.name)
+            current = next.name
+
+    def move(self, new_data=None):
+        data = self.state.save(new_data)
+        if data["valid"] is False:
+            return data
+        else:
+            self.state_data[self.state.name] = data
+
+        next = self._get_next_state()
+
+        if next is not None and next.name != self.state.name:
+            self.change(next.name)
+
+        return data
