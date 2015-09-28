@@ -4,6 +4,7 @@ from django.conf.urls import patterns, url
 from django.contrib.auth import views as auth_views
 
 from django.views.generic import TemplateView
+from court_admin.forms import StrongPasswordChangeForm
 from views import UsageStatsView, InviteUserView, CourtAdminListView, RegisterView
 
 
@@ -30,7 +31,8 @@ urlpatterns = patterns("",
         name='logout'),
 
     url(r'^password-change/$', auth_views.password_change,
-        {'template_name': 'court_registration/password_change_form.html'},
+        {'template_name': 'court_registration/password_change_form.html',
+         'password_change_form': StrongPasswordChangeForm},
         name='password_change'),
 
     url(r'^password-change/done/$', auth_views.password_change_done,

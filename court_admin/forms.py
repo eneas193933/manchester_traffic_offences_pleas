@@ -5,9 +5,13 @@ from django import forms
 from django.core.urlresolvers import reverse
 from django.db import IntegrityError
 from django.contrib.auth.models import User, Permission
+from django.contrib.auth.forms import PasswordChangeForm, SetPasswordForm
 from django.template.loader import render_to_string
 from django.utils.encoding import force_bytes, force_text
 from django.utils.http import urlsafe_base64_encode, urlsafe_base64_decode
+from django.utils.translation import ugettext, ugettext_lazy as _
+
+from passwords.fields import PasswordField
 
 from apps.plea.models import Court
 from models import CourtAdminProfile
@@ -17,8 +21,17 @@ from token import token_generator
 class EmailNotAvailable(Exception):
     pass
 
+
 class UsernameNotAvailable(Exception):
     pass
+
+
+class StrongPasswordChangeForm(PasswordChangeForm):
+    new_password1 = PasswordField(label=_("New password"))
+
+
+class StrongSetPasswordForm(SetPasswordForm):
+    new_password1 = PasswordField(label=_("New password"))
 
 
 class InviteUserForm(forms.Form):
@@ -96,7 +109,7 @@ class RegistrationForm(forms.Form):
     username = forms.CharField(max_length=30)
     first_name = forms.CharField(max_length=30)
     last_name = forms.CharField(max_length=30)
-    password = forms.CharField(widget=forms.PasswordInput(), required=True)
+    password = PasswordField(required=True)
     password2 = forms.CharField(widget=forms.PasswordInput(), required=True)
 
     def clean(self):
