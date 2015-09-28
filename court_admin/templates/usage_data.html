@@ -4,11 +4,33 @@
     {{ block.super }}
 
     <script>
+
+        function updatePostalTotals(){
+            $(".response_total").each(function(i, obj){
+
+                var idx = $(this).attr("rel");
+
+                var guilty = $('#id_form-' + idx + '-postal_guilty_pleas').val();
+                var not_guilty = $('#id_form-' + idx + '-postal_not_guilty_pleas').val();
+
+                if(Math.floor(guilty) == guilty && Math.floor(not_guilty) == not_guilty){
+                    $(this).html(parseInt(guilty) + parseInt(not_guilty));
+                }
+            });
+        }
+
         $(document).ready(function(){
            $("#court-selector").change(function(){
                window.location = $(this).val();
            });
         });
+
+        $(document).ready(function() {
+            updatePostalTotals();
+
+            $('input[type=number]').change(updatePostalTotals);
+        });
+
     </script>
 {% endblock %}
 
@@ -76,7 +98,9 @@
             <th>Online guilty pleas</th>
             <th>Online not guilty pleas</th>
             <th>Postal requisitions</th>
-            <th>Postal responses</th>
+            <th>Postal guilty pleas</th>
+            <th>Postal not guilty pleas</th>
+            <th>Total postal pleas</th>
         </tr>
         {% for form in formset %}
         {% with data=form.instance %}
@@ -87,13 +111,17 @@
             <td>{{ data.online_submissions }}</td>
             <td>{{ data.online_guilty_pleas }}</td>
             <td>{{ data.online_not_guilty_pleas }}</td>
-            <td>{{ form.postal_requisitions}}</td>
-            <td>{{ form.postal_responses }}</td>
+            <td>{{ form.postal_requisitions }}</td>
+            <td>{{ form.postal_guilty_pleas }}</td>
+            <td>{{ form.postal_not_guilty_pleas }}</td>
+            <td rel="{{ forloop.counter0 }}" class="response_total"></td>
         </tr>
         {% endwith %}
         {% endfor %}
     </table>
-    <button type="submit">Update court usage data</button>
+    <p>
+        <button type="submit" class="button">Save</button>
+    </p>
     {% csrf_token %}
 </form>
 

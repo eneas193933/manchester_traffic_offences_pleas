@@ -1,6 +1,5 @@
 from django.core.exceptions import PermissionDenied
 from django.shortcuts import redirect
-from django.views.decorators.debug import sensitive_post_parameters
 from django.views.generic import TemplateView, FormView
 from django.forms.models import modelformset_factory
 from django.contrib import messages
@@ -18,7 +17,7 @@ class UsageStatsView(TemplateView):
     def _get_formset(self, court, *args, **kwargs):
         usage_formset = modelformset_factory(
             UsageStats,
-            fields=("postal_requisitions", "postal_responses"),
+            fields=("postal_requisitions", "postal_guilty_pleas", "postal_not_guilty_pleas"),
             extra=0)
 
         form_kwargs = {
@@ -105,7 +104,12 @@ class InviteUserView(FormView):
             return self.render_to_response(self.get_context_data(form=form))
 
         else:
-            form.send_invite_email(user)
+
+            context = {
+                "host": self.request.get_host(),
+                "use_https": self.request.is_secure()
+            }
+            form.send_invite_email(user, **context)
             messages.info(self.request, "An invitation has been sent to {}".format(user.email))
 
         self.success_url = self.request.path
@@ -177,9 +181,48 @@ class CourtAdminListView(TemplateView):
 
         return User.objects.filter(user_permissions=court_staff_perm)
 
+    def _can_modify_user(self, user):
+
+        return self.request.user.has_perm("plea.court_staff_admin") and \
+               not user.is_superuser and \
+               not user.is_staff #and \
+               #user.has_perm("plea.court_staff_user")
+
     def get(self, request, *args, **kwargs):
 
         kwargs["users"] = self._get_users()
+
+        return super(CourtAdminListView, self).get(request, *args, **kwargs)
+
+    def post(self, request, *args, **kwargs):
+
+        kwargs["users"] = self._get_users()
+
+        action = request.POST.get("action", None)
+        id = request.POST.get("id", None)
+
+        try:
+            user = User.objects.get(pk=id)
+        except User.DoesNotExist:
+            return redirect(request.path)
+
+        if action == "resend":
+            if self._can_modify_user(user): # TODO: Check the user is an invite - need to add an user.is_invite() method
+                context = {
+                    "host": self.request.get_host(),
+                    "use_https": self.request.is_secure()
+                }
+                InviteUserForm.send_invite_email(user, **context)
+                messages.info(request, "Invite resent")
+
+            return redirect(request.path)
+
+        elif action == "delete":
+            if self._can_modify_user(user):
+                user.delete()
+                messages.info(request, "Delete")
+
+            return redirect(request.path)
 
         return super(CourtAdminListView, self).get(request, *args, **kwargs)
 

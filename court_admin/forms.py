@@ -87,7 +87,7 @@ class InviteUserForm(forms.Form):
             form.cleaned_data["court"])
 
     @staticmethod
-    def send_invite_email(user):
+    def send_invite_email(user, **extra_context):
 
         token = token_generator.make_token(user)
 
@@ -97,6 +97,8 @@ class InviteUserForm(forms.Form):
             "invite_url": reverse("register", kwargs={"uidb64": uid, "token": token}),
             "name": user.first_name
         }
+
+        context.update(extra_context)
 
         message = render_to_string("court_registration/invite_user_email.txt", context)
         subject = render_to_string("court_registration/invite_user_email_subject.txt", context)

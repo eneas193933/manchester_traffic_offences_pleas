@@ -339,7 +339,14 @@ class UsageStats(models.Model):
     online_guilty_pleas = models.PositiveIntegerField(default=0)
     online_not_guilty_pleas = models.PositiveIntegerField(default=0)
 
+    # NOTE: this fields would has been replaced by individual not
+    # guilty/guilty fields. But leaving it in place for now as the live
+    # system contains valid data.  Once we are using the fields below
+    # this field can be removed.
     postal_requisitions = models.PositiveIntegerField(blank=True, null=True)
+
+    postal_guilty_pleas = models.PositiveIntegerField(blank=True, null=True)
+    postal_not_guilty_pleas = models.PositiveIntegerField(blank=True, null=True)
     postal_responses = models.PositiveIntegerField(blank=True, null=True)
 
     objects = UsageStatsManager()
@@ -349,7 +356,9 @@ class UsageStats(models.Model):
         verbose_name_plural = "Usage Stats"
 
     def has_court_data(self):
-        return self.postal_requisitions is not None and self.postal_responses is not None
+        return (self.postal_guilty_pleas is not None and
+                self.postal_not_guilty_pleas is not None and
+                self.postal_requisitions is not None)
 
 
 class CourtManager(models.Manager):

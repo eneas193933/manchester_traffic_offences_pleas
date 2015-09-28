@@ -4,7 +4,7 @@ You've been invited to the MaP court admin system.
 
 Click the link below, or copy and paste it into your browser, to complete your registration
 
-http://localhost:8000{{ invite_url }}
+{% if use_https %}https{% else %}http{% endif %}://{{ domain }}{{ invite_url }}
 
 Regards,
 

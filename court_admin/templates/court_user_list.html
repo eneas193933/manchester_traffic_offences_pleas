@@ -4,6 +4,9 @@
 
 <h1>Court users</h1>
 
+{% include "messages.html" %}
+
+{% if users %}
 <table>
     <tr>
         <th>username</th>
@@ -29,13 +32,28 @@
         <td>{{ user.courtadminprofile.court.court_name }}</td>
         <td>
             {% if not user.is_active %}
+            <form method="post" action="{{ request.path }}">{% csrf_token %}
+                <input type="hidden" name="id" value="{{ user.id }}">
+                <input type="hidden" name="action" value="resend">
                 <button>Resend invite</button>
+            </form>
+            <form method="post" action="{{ request.path }}">{% csrf_token %}
+                <input type="hidden" name="id" value="{{ user.id }}">
+                <input type="hidden" name="action" value="delete">
+                <button>Delete invite</button>
+            </form>
             {% else %}
-                <a href="#">Edit user</a>
+                <button>Edit user</button>
             {% endif %}
         </td>
     </tr>
     {% endfor %}
 </table>
+
+{% else %}
+
+    <p>There are currently no court users. You can <a href="{% url 'invite_users' %}">invite</a> new users.</p>
+
+{% endif %}
 
 {% endblock %}

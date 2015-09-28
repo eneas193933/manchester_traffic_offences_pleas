@@ -4,7 +4,7 @@ from apps.plea.models import UsageStats, Court, Case, CaseAction, CourtEmailCoun
 
 
 class UsageStatsAdmin(admin.ModelAdmin):
-    list_display = ('start_date', 'online_submissions', 'postal_requisitions', 'postal_responses')
+    list_display = ('start_date', 'online_submissions', 'postal_not_guilty_pleas', 'postal_guilty_pleas', 'postal_requisitions', 'postal_responses')
     list_editable = ('postal_requisitions', 'postal_responses')
 
 class CourtAdmin(admin.ModelAdmin):
