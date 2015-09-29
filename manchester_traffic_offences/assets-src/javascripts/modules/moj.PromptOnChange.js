@@ -24,7 +24,6 @@
       this.settings = $.extend({}, this.defaults, options);
 
       this.getRefreshHeaders();
-      this.sessionRefreshAt = this.getRefreshTime();
 
       this.hashedFields = this.hashFields();
 
@@ -87,12 +86,28 @@
     },
 
     getRefreshHeaders: function() {
-      var request = new XMLHttpRequest();
-      request.open('GET', document.location, false);
-      request.send(null);
+      var self = this,
+          request = new XMLHttpRequest();
 
-      this.refreshHeader = request.getResponseHeader('Refresh');
-      this.dateHeader = request.getResponseHeader('Date');
+      this.sessionRefreshAt = null;
+      this.refreshHeader = null;
+      this.dateHeader = null;
+
+      request.onload = function() {
+        if (this.status === 200) {
+          var refreshHeader = this.getResponseHeader('Refresh');
+          var dateHeader = this.getResponseHeader('Date');
+
+          if (refreshHeader !== null) {
+            self.refreshHeader = refreshHeader.match(/^\d*/)[0];
+            self.dateHeader = dateHeader;
+            console.log(self.refreshHeader, self.dateHeader);
+            self.sessionRefreshAt = self.getRefreshTime();
+          }
+        }
+      };
+      request.open('GET', document.location, true);
+      request.send(null);
     },
 
     getRefreshTime: function() {
