@@ -21,28 +21,38 @@ class StateMachineTestsWithData(TestCase):
 
     def get_good_case_data(self, override=None):
         hearing_date = datetime.date.today()+datetime.timedelta(30)
-        case_data = {"date_of_hearing_0": str(hearing_date.day),
-                     "date_of_hearing_1": str(hearing_date.month),
-                     "date_of_hearing_2": str(hearing_date.year),
-                     "urn_0": "06",
-                     "urn_1": "AA",
-                     "urn_2": "0000000",
-                     "urn_3": "00",
+        case_data = {"date_of_hearing": str(hearing_date),
+                     "urn": "06/AA/000000000",
                      "number_of_charges": 3,
                      "plea_made_by": "Defendant"}
         case_data.update(override or {})
         return case_data
 
+    def get_good_defendant_details(self, override=None):
+        details = {"first_name": "Joe",
+                   "last_name": "Bloggs",
+                   "correct_address": True,
+                   "contact_number": "0161 800 9000",
+                   "date_of_birth": datetime.date(1970, 1, 1)}
+        details.update(override or {})
+        return details
+
     def test_start_at_the_start(self):
         m = PleaStates({})
-        self.assertEqual(m.state.name, "case_stage")
+        self.assertEqual(m.state.name, "case")
 
     def test_use_defendant_path(self):
-        m = PleaStates(state_data={"case_stage": self.get_good_case_data()})
-        m.init()
+        m = PleaStates(state_data={"case": self.get_good_case_data()})
+        m.init("defendant_details")
         self.assertEqual(m.state.name, "defendant_details")
 
     def test_use_company_path(self):
-        m = PleaStates(state_data={"case_stage": self.get_good_case_data({"plea_made_by": "Company representative"})})
-        m.init()
+        m = PleaStates(state_data={"case": self.get_good_case_data({"plea_made_by": "Company representative"})})
+        m.init("company_details")
         self.assertEqual(m.state.name, "company_details")
+
+    def test_defendant_details_path(self):
+        m = PleaStates(state_data={"case": self.get_good_case_data(),
+                                   "defendant_details": self.get_good_defendant_details()})
+        m.init("defendant_plea_1")
+        self.assertEqual(m.state.name, "defendant_plea__1")

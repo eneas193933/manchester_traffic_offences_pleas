@@ -1,13 +1,9 @@
 from collections import OrderedDict
 from copy import deepcopy
 from operator import eq
-import re
 
 from states import BaseState
 from . import ex
-
-
-RE_STATE_CONDITION = re.compile('(.*)\[(.*)\]')
 
 
 def get_declared_states(bases, attrs, with_base_states=True, state_type=None):
@@ -187,57 +183,11 @@ class FormBasedFSM(BaseFSM):
     def __init__(self, state_data, *args, **kwargs):
         super(FormBasedFSM, self).__init__(*args, **kwargs)
 
-        def make_condition(operator, operands):
-            c = [operator, ] + operands
-            return c
-
         self.state_data = state_data
-
-        self._init_states()
-
-        self.exit_state_conditions = {}
-        for name, state in self.states.items():
-            for idx, exit_state in enumerate(state.exit_states):
-                matches = RE_STATE_CONDITION.match(exit_state)
-                if matches is not None:
-                    e_state, condition = matches.groups()
-                    state.exit_states[idx] = e_state
-
-                    if "=" in condition:
-                        terms = make_condition("eq", condition.split("="))
-
-                    if state.name not in self.exit_state_conditions:
-                        self.exit_state_conditions[state.name] = [{e_state: terms}]
-                    else:
-                        self.exit_state_conditions[state.name].append({e_state: terms})
-
-        self.state.all_data = self.state_data
-
-    def _init_states(self):
-        pass
+        self.state.all_data = state_data
 
     def _get_next_state(self):
-        next_state = None
-        current_state = self.state.name
-
-        # Check if the data meets any of our conditions
-        for condition in self.exit_state_conditions.get(self.state.name, {}):
-            exit_state, [operator, op1, op2] = condition.items()[0]
-            data = self.state_data.get(self.state.name, {}).get(op1)
-            if operator == "eq" and eq(data, op2):
-                next_state = exit_state
-                break
-
-        # If the data doesn't meet any conditions choose the first unconditional
-        # exit state
-        if next_state is None:
-            conditions = self.exit_state_conditions.get(self.state.name, {})
-            conditional_states = [s.keys()[0] for s in conditions]
-            available_states = list(set(self.state.exit_states) - set(conditional_states))
-
-            if available_states:
-                next_state = available_states[0]
-
+        next_state = self.state.get_next()
         return self.states.get(next_state)
 
     def _invalidate_states_data(self):
@@ -248,7 +198,7 @@ class FormBasedFSM(BaseFSM):
         super(FormBasedFSM, self).change(new_state, *args, **kwargs)
         self.state.all_data = self.state_data
 
-    def init(self, state=None):
+    def init(self, state=None, index=None):
         """
         Starts at the beginning of the journey and moves through
         all the states until it finds an invalid one or arrives at
@@ -266,7 +216,7 @@ class FormBasedFSM(BaseFSM):
 
         while(True):
             next = self._get_next_state()
-            verified = self.state.verify()
+            verified = self.state.validate()
             if current == state or not verified:
                 break
 

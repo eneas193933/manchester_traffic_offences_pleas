@@ -1,3 +1,8 @@
+import re
+from operator import eq
+
+RE_STATE_CONDITION = re.compile('(.*)\[(.*)\]')
+
 class BaseState(object):
     """
     Represents each individual state of the machine.
@@ -64,15 +69,67 @@ class BaseState(object):
                 self.entry_action(exited_state, *args, **kwargs)
 
 
-class StateWithForm(BaseState):
+class ConditionalStateWithData(BaseState):
+    def __init__(self, *args, **kwargs):
+        super(ConditionalStateWithData, self).__init__(*args, **kwargs)
+
+        def make_condition(operator, operands):
+            c = [operator, ] + operands
+            return c
+
+        self.exit_state_conditions = {}
+
+        for idx, exit_state in enumerate(self.exit_states):
+            matches = RE_STATE_CONDITION.match(exit_state)
+            if matches is not None:
+                e_state, condition = matches.groups()
+                self.exit_states[idx] = e_state
+
+                if "=" in condition:
+                    terms = make_condition("eq", condition.split("="))
+
+                if self.name not in self.exit_state_conditions:
+                    self.exit_state_conditions = [{e_state: terms}]
+                else:
+                    self.exit_state_conditions.append({e_state: terms})
+
+    def get_next(self):
+        current_state = self.name
+        next_state = None
+
+        # Check if the data meets any of our conditions
+        for condition in self.exit_state_conditions:
+            exit_state, [operator, op1, op2] = condition.items()[0]
+            data = self.all_data.get(self.name, {}).get(op1)
+            if operator == "eq" and eq(data, op2):
+                next_state = exit_state
+                break
+
+        # If the data doesn't meet any conditions choose the first unconditional
+        # exit state
+        if next_state is None:
+            conditions = self.exit_state_conditions
+            conditional_states = [s.keys()[0] for s in conditions]
+            available_states = list(set(self.exit_states) - set(conditional_states))
+
+            if available_states:
+                next_state = available_states[0]
+
+        return next_state
+
+
+class StateWithForm(ConditionalStateWithData):
     form_class = None
     template = None
 
     @property
     def my_data(self):
-        return self.all_data.get(self.name, {})
+        if self.name not in self.all_data:
+            self.all_data[self.name] = {}
 
-    def verify(self):
+        return self.all_data[self.name]
+
+    def validate(self):
         if self.form_class is not None:
             my_data = self.my_data
             self.form = self.form_class(data=my_data)
