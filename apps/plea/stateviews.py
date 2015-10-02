@@ -2,9 +2,8 @@ from django.utils.decorators import method_decorator
 from django.template import RequestContext, loader
 from django.views.decorators.cache import never_cache
 from django.http import HttpResponse, HttpResponseRedirect
-from django.core.urlresolvers import reverse
 
-from form_states import PleaStates, PleaState
+from form_states import PleaStates
 
 @never_cache
 def state_view(request, state=None, index=None):
@@ -15,16 +14,13 @@ def state_view(request, state=None, index=None):
     sm.init(state, index=index)
 
     if sm.state.name != state:
-        return HttpResponseRedirect(reverse("state_form_step", kwargs={"state": sm.state.name}))
+        return HttpResponseRedirect(sm.state.get_url())
 
     if request.method == "POST":
         data = sm.move(request.POST)
         if data["valid"] == True:
             request.session["state_data"] = sm.state_data
-            if type(sm.state) is PleaState:
-                return HttpResponseRedirect(reverse("plea_form_step", kwargs={"state": sm.state.name, "index": sm.state.plea_index }))
-            else:
-                return HttpResponseRedirect(reverse("state_form_step", kwargs={"state": sm.state.name}))
+            return HttpResponseRedirect(sm.state.get_url())
         else:
             form = sm.state.form
     else:

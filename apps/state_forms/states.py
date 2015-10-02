@@ -1,6 +1,9 @@
 import re
 from operator import eq
 
+from django.core.urlresolvers import reverse
+
+
 RE_STATE_CONDITION = re.compile('(.*)\[(.*)\]')
 
 class BaseState(object):
@@ -93,8 +96,14 @@ class ConditionalStateWithData(BaseState):
                 else:
                     self.exit_state_conditions.append({e_state: terms})
 
+    @property
+    def my_data(self):
+        if self.name not in self.all_data:
+            self.all_data[self.name] = {}
+
+        return self.all_data[self.name]
+
     def get_next(self):
-        current_state = self.name
         next_state = None
 
         # Check if the data meets any of our conditions
@@ -122,12 +131,8 @@ class StateWithForm(ConditionalStateWithData):
     form_class = None
     template = None
 
-    @property
-    def my_data(self):
-        if self.name not in self.all_data:
-            self.all_data[self.name] = {}
-
-        return self.all_data[self.name]
+    def get_url(self):
+        return reverse("state_form_step", kwargs={"state": self.name})
 
     def validate(self):
         if self.form_class is not None:

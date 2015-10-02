@@ -1,19 +1,43 @@
 from __future__ import absolute_import
 
+from django.core.urlresolvers import reverse
+
 from apps.state_forms.states import StateWithForm
 from apps.state_forms.fsm import FormBasedFSM
 from . import forms
 
 
-class PleaStates(StateWithForm):
+class PleaIndexState(StateWithForm):
     plea_index = 1
+
+    def get_url(self):
+        return reverse("state_form_step", kwargs={"state": self.name})
+
+    @property
+    def my_data(self):
+        if self.name not in self.all_data:
+            self.all_data[self.name] = {"data": [{}]}
+
+        if len(self.all_data[self.name]["data"]) < self.plea_index:
+            self.all
+
+        return self.all_data[self.name]["data"][self.plea_index-1]
+
+    def get_next(self):
+        charge_count = self.all_data.get("case", {}).get("number_of_charges", 1)
+        if self.plea_index < charge_count:
+            self.plea_index += 1
+            return self
+        else:
+            return super(PleaIndexState, self).get_next()
 
     def validate(self):
         if self.form_class is not None:
-            if "pleas" not in self.my_data:
-                self.my_data["pleas"] = [{"valid": False}]
+            if self.name not in self.my_data:
+                self.my_data[self.name] = {"data":[{"valid": False}]}
 
-            my_data = self.my_data["pleas"][self.plea_index-1]
+            print self.my_data[self.name]
+            my_data = self.my_data[self.name]["data"][self.plea_index-1]
 
             self.form = self.form_class(data=my_data)
             if self.form.is_valid():
@@ -23,14 +47,6 @@ class PleaStates(StateWithForm):
                 self.form = self.form_class(initial=my_data)
 
         return True
-
-    def get_next(self):
-        charge_count = self.all_data.get("plea", {}).get("number_of_charges", 1)
-        if self.plea_index < charge_count:
-            return self.name #TODO requires index :(
-        else:
-            return super(PleaStates, self).get_next()
-
 
     def load(self):
         """
@@ -64,7 +80,9 @@ class PleaStates(StateWithForm):
         else:
             save_data = {"valid": True}
 
-        self.my_data[self.plea_index] = save_data
+        self.my_data["data"][self.plea_index] = save_data
+
+        self.my_data["none_guilty"] = True
 
         for plea in self.my_data:
             if plea["plea"] == "Guilty":
@@ -84,8 +102,8 @@ class PleaStates(FormBasedFSM):
     company_details = StateWithForm(template="company_details.html",
                                     label="Company details",
                                     form_class=forms.CompanyDetailsForm,
-                                    exits_to=["company_plea_1"])
-    company_plea = PleaStates(template="plea.html",
+                                    exits_to=["company_plea"])
+    company_plea = PleaIndexState(template="plea.html",
                                label="Your plea",
                                form_class=forms.PleaForm,
                                exits_to=["company_finances[none_guilty=True]",
@@ -98,7 +116,7 @@ class PleaStates(FormBasedFSM):
                                    label="Review",
                                    form_class=forms.ConfirmationForm,
                                    exits_to=["company_details",
-                                             "company_plea_1",
+                                             "company_plea",
                                              "company_finances",
                                              "company_complete"])
     company_complete = StateWithForm(template="complete.html")
@@ -107,8 +125,8 @@ class PleaStates(FormBasedFSM):
     defendant_details = StateWithForm(template="your_details.html",
                                       label="Your details",
                                       form_class=forms.YourDetailsForm,
-                                      exits_to=["defendant_plea_1"])
-    defendant_plea = PleaStates(template="plea.html",
+                                      exits_to=["defendant_plea"])
+    defendant_plea = PleaIndexState(template="plea.html",
                                 label="Your plea",
                                 form_class=forms.PleaForm,
                                 exits_to=["defendant_finances[none_guilty=True]",
@@ -126,7 +144,7 @@ class PleaStates(FormBasedFSM):
                                      label="Review",
                                      form_class=forms.ConfirmationForm,
                                      exits_to=["defendant_details",
-                                               "defendant_plea_1",
+                                               "defendant_plea",
                                                "defendant_finances",
                                                "defendant_complete"])
     defendant_complete = StateWithForm(template="complete.html")

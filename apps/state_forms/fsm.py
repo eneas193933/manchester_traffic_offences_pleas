@@ -72,7 +72,7 @@ class BaseFSM(object):
         self.states = deepcopy(self.base_states)
 
         try:
-            self.__state = self.states.keys()[0]
+            self.__state = self.states.values()[0]
         except IndexError:
             self.__state = ''
 
@@ -83,11 +83,11 @@ class BaseFSM(object):
             self.set_initial_state(initial_state, **kwargs)
 
     def __unicode__(self):
-        return self.__state
+        return u"<{}> {}".format(self.__state, self.__state.name)
 
     def getstate(self):
-        if self.__state and self.__state in self.states:
-            return self.states[self.__state]
+        if self.__state and self.__state.name in self.states:
+            return self.states[self.__state.name]
 
     def setstate(self, value):
         raise ex.TransitionNotAllowed("State is read only, use change() instead.")
@@ -136,20 +136,20 @@ class BaseFSM(object):
         """
 
         if new_state is None:
-            pass
+            raise ex.StateDoesNotExist("<No state given>")
 
         if self.verify_on_execute:
             self.verify()
 
-        if new_state not in self.states:
+        if new_state.name not in self.states:
             raise ex.StateDoesNotExist(new_state)
 
         exiting_state = self.state
 
-        if new_state not in exiting_state.exit_states:
+        if new_state.name not in exiting_state.exit_states:
             raise ex.TransitionNotAllowed("%s -> %s" % (exiting_state.name, new_state))
 
-        entering_state = self.states[new_state]
+        entering_state = self.states[new_state.name]
 
         # run the exit state functions, checking for cancellation or redirection
         try:
@@ -169,7 +169,6 @@ class BaseFSM(object):
 
         # safe to change the state if we get this far
         self.__state = new_state
-
         return self.state
 
 
@@ -186,13 +185,17 @@ class FormBasedFSM(BaseFSM):
         self.state_data = state_data
         self.state.all_data = state_data
 
-    def _get_next_state(self):
+    def get_next_state(self):
         next_state = self.state.get_next()
         return self.states.get(next_state)
 
     def _invalidate_states_data(self):
         for key, value in self.state_data.items():
-            value["valid"] = False
+            if "data" in value and len(value["data"]):
+                    for v in value["data"]:
+                        v["valid"] = False
+            else:
+                value["valid"] = False
 
     def change(self, new_state=None, *args, **kwargs):
         super(FormBasedFSM, self).change(new_state, *args, **kwargs)
@@ -205,7 +208,12 @@ class FormBasedFSM(BaseFSM):
         the requested_state
         :return:
         """
-        current = self.states.keys()[0]
+        if state not in self.states:
+            return
+        else:
+            state = self.states[state]
+
+        current = self.states.values()[0]
 
         # If we're already where we need to be then return
         if state == current:
@@ -215,13 +223,13 @@ class FormBasedFSM(BaseFSM):
         self._invalidate_states_data()
 
         while(True):
-            next = self._get_next_state()
+            next = self.get_next_state()
             verified = self.state.validate()
             if current == state or not verified:
                 break
 
-            self.change(next.name)
-            current = next.name
+            self.change(next)
+            current = next
 
     def move(self, new_data=None):
         data = self.state.save(new_data)
@@ -230,9 +238,9 @@ class FormBasedFSM(BaseFSM):
         else:
             self.state_data[self.state.name] = data
 
-        next = self._get_next_state()
+        next = self.get_next_state()
 
         if next is not None and next.name != self.state.name:
-            self.change(next.name)
+            self.change(next)
 
         return data
