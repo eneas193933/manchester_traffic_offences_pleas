@@ -222,14 +222,14 @@ class FormBasedFSM(BaseFSM):
         # Invalidate all the states and move to the start
         self._invalidate_states_data()
 
-        while(True):
-            next = self.get_next_state()
+        while True:
+            nxt = self.get_next_state()
             verified = self.state.validate()
             if current == state or not verified:
                 break
 
-            self.change(next)
-            current = next
+            self.change(nxt)
+            current = nxt
 
     def move(self, new_data=None):
         data = self.state.save(new_data)

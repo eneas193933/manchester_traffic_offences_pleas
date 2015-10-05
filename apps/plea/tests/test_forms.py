@@ -2,6 +2,7 @@ import redgreenunittest as unittest
 
 from ..forms import CompanyFinancesForm
 
+
 class TestCompanyForm(unittest.TestCase):
 
     def test_trading_period_not_specified_other_fields_not_required(self):

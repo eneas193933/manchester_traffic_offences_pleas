@@ -19,7 +19,7 @@ class PleaIndexState(StateWithForm):
             self.all_data[self.name] = {"data": [{}]}
 
         if len(self.all_data[self.name]["data"]) < self.plea_index:
-            self.all
+            self.all_data[self.name]["data"].append({"valid": False})
 
         return self.all_data[self.name]["data"][self.plea_index-1]
 
@@ -33,18 +33,12 @@ class PleaIndexState(StateWithForm):
 
     def validate(self):
         if self.form_class is not None:
-            if self.name not in self.my_data:
-                self.my_data[self.name] = {"data":[{"valid": False}]}
-
-            print self.my_data[self.name]
-            my_data = self.my_data[self.name]["data"][self.plea_index-1]
-
-            self.form = self.form_class(data=my_data)
+            self.form = self.form_class(data=self.my_data)
             if self.form.is_valid():
-                my_data["valid"] = True
+                self.my_data["valid"] = True
                 return True
             else:
-                self.form = self.form_class(initial=my_data)
+                return False
 
         return True
 
@@ -68,7 +62,9 @@ class PleaIndexState(StateWithForm):
         :return: the validated data or None if invalid
         """
 
-        if post_data is None: post_data = {}
+        if post_data is None:
+            post_data = {}
+
         save_data = {"valid": False}
 
         if self.form_class is not None:
@@ -104,10 +100,10 @@ class PleaStates(FormBasedFSM):
                                     form_class=forms.CompanyDetailsForm,
                                     exits_to=["company_plea"])
     company_plea = PleaIndexState(template="plea.html",
-                               label="Your plea",
-                               form_class=forms.PleaForm,
-                               exits_to=["company_finances[none_guilty=True]",
-                                         "company_review"])
+                                  label="Your plea",
+                                  form_class=forms.PleaForm,
+                                  exits_to=["company_finances[none_guilty=True]",
+                                            "company_review"])
     company_finances = StateWithForm(template="company_finances.html",
                                      label="Your finances",
                                      form_class=forms.CompanyFinancesForm,

@@ -137,12 +137,13 @@ class StateWithForm(ConditionalStateWithData):
     def validate(self):
         if self.form_class is not None:
             my_data = self.my_data
-            self.form = self.form_class(data=my_data)
+            self.form = self.form_class(initial=my_data)
+            import ipdb; ipdb.set_trace()
             if self.form.is_valid():
                 my_data["valid"] = True
                 return True
             else:
-                self.form = self.form_class(initial=my_data)
+                return False
 
         return True
 

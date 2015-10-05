@@ -6,6 +6,7 @@ from django.template.loader import render_to_string
 from django.utils.encoding import force_text
 from django.utils.translation import ugettext_lazy as _
 
+
 class DSRadioFieldRenderer(RadioFieldRenderer):
     def render(self):
         """
