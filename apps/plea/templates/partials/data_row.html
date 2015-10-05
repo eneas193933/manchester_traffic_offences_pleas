@@ -1,0 +1,9 @@
+{% if tag == "tr" %}
+<tr>
+	<th>{{ label }}</th>
+	<td>{{ value }}</td>
+</tr>
+{% else %}
+<dt>{{ label }}</dt>
+<dd>{{ value }}</dd>
+{% endif %}

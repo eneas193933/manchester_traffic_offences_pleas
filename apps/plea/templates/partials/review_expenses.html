@@ -1,29 +1,13 @@
-{% load i18n %}
-{% load testing %}
-{% load humanize %}
+{% load i18n data_row testing humanize %}
 
 {% add_test_tag "<<SHOWINGEXPENSES>>" %}
 
+{% data_row row_tag _("Financial hardship details") hardship.hardship_details|linebreaksbr %}
 
-    <tbody>
-        <tr>
-            <th>{% blocktrans %}Financial hardship details{% endblocktrans %}</th>
-            <td>{{ hardship.hardship_details|linebreaksbr }}</td>
-        </tr>
-        <tr>
-            <th>{% blocktrans %}Other contributors to household bills{% endblocktrans %}</th>
-            <td>{{ household_expenses.other_bill_payers|yesno:_("Yes,No (v3)") }}</td>
-        </tr>
-        <tr>
-            <th>{% blocktrans %}Total household expenses{% endblocktrans %}</th>
-            <td>£{{ your_expenses.total_household_expenses|floatformat:2|intcomma }}</td>
-        </tr>
-        <tr>
-            <th>{% blocktrans %}Total other expenses{% endblocktrans %}</th>
-            <td>£{{ your_expenses.total_other_expenses|floatformat:2|intcomma }}</td>
-        </tr>
-        <tr>
-            <th>{% blocktrans %}Total expenses{% endblocktrans %}</th>
-            <td>£{{ your_expenses.total_expenses|floatformat:2|intcomma }}</td>
-        </tr>
-    </tbody>
+{% data_row row_tag _("Other contributors to household bills") household_expenses.other_bill_payers|yesno:_("Yes,No (v3)") %}
+
+{% data_row row_tag _("Total household expenses") your_expenses.total_household_expenses|floatformat:2|intcomma %}
+
+{% data_row row_tag _("Total other expenses") your_expenses.total_other_expenses|floatformat:2|intcomma %}
+
+{% data_row row_tag _("Total expenses") your_expenses.total_expenses|floatformat:2|intcomma %}

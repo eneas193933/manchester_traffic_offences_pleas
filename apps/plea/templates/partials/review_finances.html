@@ -1,73 +1,49 @@
-{% load i18n %}
-{% load humanize %}
+{% load i18n data_row humanize %}
 
-    <tbody>
-        <tr>
-            <th>{% blocktrans %}You are{% endblocktrans %}</th>
-            <td>{% trans your_finances.you_are %}</td>
-        </tr>
+    {% data_row row_tag _("You are") _(your_finances.you_are) %}
+
     {% if your_finances.you_are == "Employed" %}
-        <tr>
-            <th>{% blocktrans %}You get paid{% endblocktrans %}</th>
-            <td>{% trans your_finances.employed_take_home_pay_period %}</td>
-        </tr>
-        <tr>
-            <th>{% blocktrans %}Amount{% endblocktrans %}</th>
-            <td>£{{ your_finances.employed_take_home_pay_amount|floatformat:2|intcomma }}</td>
-        </tr>
+        {% data_row row_tag _("You get paid") _(your_finances.employed_take_home_pay_period) %}
+
+        {% data_row row_tag _("Amount") your_finances.employed_take_home_pay_amount|floatformat:2|intcomma %}
     {% endif %}
+
     {% if your_finances.you_are == "Self-employed" %}
-        <tr>
-            <th>{% blocktrans %}You get paid{% endblocktrans %}</th>
-            <td>{% if your_finances.self_employed_pay_period == "Self-employed other" %}{% blocktrans %}Other{% endblocktrans %}{% else %}{% trans your_finances.self_employed_pay_period %}{% endif %}</td>
-        </tr>
         {% if your_finances.self_employed_pay_period == "Self-employed other" %}
-        <tr>
-            <th>{% blocktrans %}Details{% endblocktrans %}</th>
-            <td>{{ your_finances.self_employed_pay_other|linebreaksbr|default:"-" }}</td>
-        </tr>
+            {% data_row row_tag _("You get paid") _("Other") %}
+        {% else %}
+            {% data_row row_tag _("You get paid") _(your_finances.self_employed_pay_period) %}
         {% endif %}
-        <tr>
-            <th>{% blocktrans %}Amount{% endblocktrans %}</th>
-            <td>£{{ your_finances.self_employed_pay_amount|floatformat:2|intcomma }}</td>
-        </tr>
+
+        {% if your_finances.self_employed_pay_period == "Self-employed other" %}
+            {% data_row row_tag _("Details") your_finances.self_employed_pay_other|linebreaksbr|default:"-" %}
+        {% endif %}
+
+        {% data_row row_tag _("Amount") your_finances.self_employed_pay_amount|floatformat:2|intcomma %}
     {% endif %}
+
     {% if your_finances.you_are == "Receiving benefits" %}
-        <tr>
-            <th>{% blocktrans %}Your benefits{% endblocktrans %}</th>
-            <td>{{ your_finances.benefits_details|linebreaksbr }}</td>
-        </tr>
-        <tr>
-            <th>{% blocktrans %}You get paid{% endblocktrans %}</th>
-            <td>{% if your_finances.benefits_period == "Benefits other" %}{% blocktrans %}Other{% endblocktrans %}{% else %}{% trans your_finances.benefits_period %}{% endif %}</td>
-        </tr>
-        {%  if your_finances.benefits_period == "Benefits other" %}
-        <tr>
-            <th>{% blocktrans %}Details{% endblocktrans %}</th>
-            <td>{{ your_finances.benefits_pay_other|linebreaksbr|default:"-" }}</td>
-        </tr>
+        {% data_row row_tag _("Your benefits") your_finances.benefits_details|linebreaksbr %}
+
+        {% if your_finances.benefits_period == "Benefits other" %}
+            {% data_row row_tag _("You get paid") _("Other") %}
+        {% else %}
+            {% data_row row_tag _("You get paid") _(your_finances.benefits_period) %}
         {% endif %}
-        <tr>
-            <th>{% blocktrans %}Amount{% endblocktrans %}</th>
-            <td>£{{ your_finances.benefits_amount|floatformat:2|intcomma }}</td>
-        </tr>
-        <tr>
-            <th>{% blocktrans %}Includes payment for dependents?{% endblocktrans %}</th>
-            <td>{{ your_finances.benefits_dependents|yesno:_("Yes,No (v1)") }}</td>
-        </tr>
+
+        {%  if your_finances.benefits_period == "Benefits other" %}
+            {% data_row row_tag _("Details") your_finances.benefits_pay_other|linebreaksbr|default:"-" %}
+        {% endif %}
+
+        {% data_row row_tag _("Amount") your_finances.benefits_amount|floatformat:2|intcomma %}
+
+        {% data_row row_tag _("Includes payment for dependents?") your_finances.benefits_dependents|yesno:_("Yes,No (v1)") %}
     {% endif %}
+
     {% if your_finances.you_are == "Other" %}
-        <tr>
-            <th>{% blocktrans %}Details{% endblocktrans %}</th>
-            <td>{{ your_finances.other_details|linebreaksbr }}</td>
-        </tr>
-        <tr>
-            <th>{% blocktrans %}Amount{% endblocktrans %}</th>
-            <td>£{{ your_finances.other_pay_amount|floatformat:2|intcomma }}</td>
-        </tr>
+        {% data_row row_tag _("Details") your_finances.other_details|linebreaksbr %}
+
+        {% data_row row_tag _("Amount") your_finances.other_pay_amount|floatformat:2|intcomma %}
     {% endif %}
-        <tr>
-            <th>{% blocktrans %}Financial hardship{% endblocktrans %}</th>
-            <td>{{ your_finances.hardship|yesno:_("Yes,No (v3)") }}</td>
-        </tr>
-    </tbody>
+
+    {% data_row row_tag _("Financial hardship") your_finances.hardship|yesno:_("Yes,No (v3)") %}

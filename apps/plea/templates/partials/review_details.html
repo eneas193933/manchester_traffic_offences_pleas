@@ -1,67 +1,43 @@
-{% load i18n %}
-{% load date %}
-{% load testing %}
+{% load i18n date data_row testing %}
 
+{% if case.plea_made_by == "Defendant" %}
+    {% add_test_tag "<<SHOWYOURDETAILS>>" %}
 
-    <tbody>
+    {% data_row row_tag _("First name") your_details.first_name %}
 
-    {% if case.plea_made_by == "Defendant" %}
-        {% add_test_tag "<<SHOWYOURDETAILS>>" %}
-        <tr>
-            <th>{% blocktrans %}First name{% endblocktrans %}</th>
-            <td>{{ your_details.first_name }}</td>
-        </tr>
-        <tr>
-            <th>{% blocktrans %}Last name{% endblocktrans %}</th>
-            <td>{{ your_details.last_name }}</td>
-        </tr>
-        <tr>
-            <th>{% blocktrans %}Address{% endblocktrans %}</th>
-            <td>{% if your_details.correct_address %}{% blocktrans %}As printed on the notice{% endblocktrans %}{% else %}{{ your_details.updated_address|linebreaksbr }}{% endif %}</td>
-        </tr>
-        <tr>
-            <th>{% blocktrans %}Contact number{% endblocktrans %}</th>
-            <td>{{ your_details.contact_number }}</td>
-        </tr>
-        <tr>
-            <th>{% blocktrans %}Date of birth{% endblocktrans %}</th>
-            <td>{{ your_details.date_of_birth|parse_date|date:"d/m/Y" }}</td>
-        </tr>
-        <tr>
-            <th>{% blocktrans %}National Insurance number{% endblocktrans %}</th>
-            <td>{{ your_details.ni_number|default:"-" }}</td>
-        </tr>
-        <tr>
-            <th>{% blocktrans %}UK driving licence number{% endblocktrans %}</th>
-            <td>{{ your_details.driving_licence_number|default:"-" }}</td>
-        </tr>
-    {% elif case.plea_made_by == "Company representative" %}
-        {% add_test_tag "<<SHOWCOMPANYDETAILS>>" %}
-        <tr>
-            <th>{% blocktrans %}Company name{% endblocktrans %}</th>
-            <td>{{ company_details.company_name }}</td>
-        </tr>
-        <tr>
-            <th>{% blocktrans %}Company address{% endblocktrans %}</th>
-            <td>{% if company_details.correct_address %}{% blocktrans %}As printed on the notice{% endblocktrans %}{% else %}{{ company_details.updated_address|linebreaksbr }}{% endif %}</td>
-        </tr>
-        <tr>
-            <th>{% blocktrans %}First name{% endblocktrans %}</th>
-            <td>{{ company_details.first_name }}</td>
-        </tr>
+    {% data_row row_tag _("Last name") your_details.last_name %}
 
-        <tr>
-            <th>{% blocktrans %}Last name{% endblocktrans %}</th>
-            <td>{{ company_details.last_name }}</td>
-        </tr>
-        <tr>
-            <th>{% blocktrans %}Position held{% endblocktrans %}</th>
-            <td>{% trans company_details.position_in_company %}</td>
-        </tr>
-        <tr>
-            <th>{% blocktrans %}Contact number{% endblocktrans %}</th>
-            <td>{{ company_details.contact_number }}</td>
-        </tr>
+    {% if your_details.correct_address %}
+        {% data_row row_tag _("Address") _("As printed on the notice") %}
+    {% else %}
+        {% data_row row_tag _("Address") your_details.updated_address|linebreaksbr %}
     {% endif %}
 
-    </tbody>
+    {% data_row row_tag _("Contact number") your_details.contact_number %}
+
+    {% data_row row_tag _("Date of birth") your_details.date_of_birth|parse_date|date:"d/m/Y" %}
+
+    {% data_row row_tag _("National Insurance number") your_details.ni_number|default:"-" %}
+
+    {% data_row row_tag _("UK driving licence number") your_details.driving_licence_number|default:"-" %}
+{% endif %}
+
+{% if case.plea_made_by == "Company representative" %}
+    {% add_test_tag "<<SHOWCOMPANYDETAILS>>" %}
+
+    {% data_row row_tag _("Company name") company_details.company_name %}
+
+    {% if company_details.correct_address %}
+        {% data_row row_tag _("Company address") _("As printed on the notice") %}
+    {% else %}
+        {% data_row row_tag _("Company address") company_details.updated_address|linebreaksbr %}
+    {% endif %}
+
+    {% data_row row_tag _("First name") company_details.first_name %}
+
+    {% data_row row_tag _("Last name") company_details.last_name %}
+
+    {% data_row row_tag _("Position held") _(company_details.position_in_company) %}
+
+    {% data_row row_tag _("Contact number") company_details.contact_number %}
+{% endif %}

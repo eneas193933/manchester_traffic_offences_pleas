@@ -349,6 +349,16 @@ class ReviewStage(FormStage):
 
         return clean_data
 
+    def render(self, request_context):
+
+        self.context["rendered_data"] = {
+            "case": {
+                "urn": ""
+            }
+        }
+
+        return super(ReviewStage, self).render(request_context)
+
 
 class CompleteStage(FormStage):
     name = "complete"
