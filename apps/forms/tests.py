@@ -49,7 +49,6 @@ class Stage3(FormStage):
         TestForm2Factory = formset_factory(TestForm2, extra=count)
         if initial:
             initial_factory_data = self.all_data[self.name].get("Factory", [])
-            initial_form_data = self.all_data[self.name]
             self.form = TestForm2Factory(initial=initial_factory_data)
         else:
             self.form = TestForm2Factory(data)
@@ -66,6 +65,12 @@ class Stage3(FormStage):
 
         return form_data
 
+class Stage4(FormStage):
+    name = "stage_4"
+    storage_key = "stage_4_data"
+    template = "test/stage4.html"
+    form_class = TestForm1
+
 
 class Review(FormStage):
     name = "review"
@@ -75,7 +80,7 @@ class Review(FormStage):
 
 class MultiStageFormTest(MultiStageForm):
     url_name = "msf-url"
-    stage_classes = [Intro, Stage2, Stage3, Review]
+    stage_classes = [Intro, Stage2, Stage3, Stage4, Review]
 
 
 class TestMultiStageForm(TestCase):
@@ -161,6 +166,19 @@ class TestMultiStageForm(TestCase):
         msf.save(form_data, request_context)
         msf.process_messages({})
         add_message.assert_called_once_with({}, 25, "This is a test message", extra_tags=None)
+
+    @patch("apps.forms.stages.reverse", reverse)
+    def test_form_stage4_saves_to_specified_key(self):
+        request_context = {}
+        msf = MultiStageFormTest({}, "stage_4")
+        msf.load(request_context)
+        msf.save({"field1": "Stage 4",
+                  "field2": 4},
+                 request_context)
+        # msf.render()
+
+        self.assertEqual(msf.all_data["stage_4_data"]["field1"], "Stage 4")
+        self.assertEqual(msf.all_data["stage_4_data"]["field2"], 4)
 
     @patch("apps.forms.stages.reverse", reverse)
     def test_form_review_loads(self):
