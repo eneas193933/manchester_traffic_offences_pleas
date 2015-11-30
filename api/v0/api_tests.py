@@ -6,7 +6,7 @@ from django.contrib.auth.models import User
 from rest_framework.reverse import reverse
 from rest_framework.test import (APITestCase, APIRequestFactory, force_authenticate)
 
-from apps.plea.models import Case
+from apps.plea.models import Case, Court
 from .views import CaseViewSet
 
 
@@ -26,8 +26,21 @@ def create_api_user():
     return user, auth_header
 
 
-class GeneralAPiTestCase(APITestCase):
+def create_court(region):
+    return Court.objects.create(
+        court_code="0000",
+        region_code=region,
+        court_name="test court",
+        court_address="test address",
+        court_telephone="0800 MAKEAPLEA",
+        court_email="test@test.com",
+        submission_email=True,
+        plp_email="test@test.com",
+        enabled=True,
+        test_mode=False)
 
+
+class GeneralAPiTestCase(APITestCase):
     def setUp(self):
         self.user, self.auth_header = create_api_user()
 
@@ -53,14 +66,15 @@ class GeneralAPiTestCase(APITestCase):
 
 
 class CaseAPICallTestCase(APITestCase):
-
     def setUp(self):
+        create_court("00")
         self.user, self.auth_header = create_api_user()
 
         self.endpoint = reverse('api-v0:case-list', format="json")
 
         self.test_data = {
-            u'urn': u'00/aa/00000/00',
+            u'urn': u'00AA0000000',
+            u'case_number': '16273482',
             u'offences': [
                 {
                     u"ou_code": u"test ou",
@@ -79,28 +93,40 @@ class CaseAPICallTestCase(APITestCase):
             ]
         }
 
-    def test_urn_validation(self):
-
-        self.test_data['urn'] = 'xxx'
-
-        response = self.client.post(self.endpoint, self.test_data,
-                                    **self.auth_header)
-
-        self.assertEqual(response.status_code, 400)
-
+    def test_duplicate_submission_validation(self):
         self.test_data['urn'] = '00/aa/0000000/00'
         response = self.client.post(self.endpoint, self.test_data,
                                     **self.auth_header)
 
         self.assertEqual(response.status_code, 201)
 
-        self.test_data['urn'] = 'xxx'
+        self.test_data['urn'] = '00/aa/0000000/00'
+        response = self.client.post(self.endpoint, self.test_data,
+                                    **self.auth_header)
+        self.assertEqual(response.status_code, 400)
+
+    def test_urn_blank_urn_validation(self):
+        self.test_data['urn'] = ""
+
+        response = self.client.post(self.endpoint, self.test_data,
+                                    **self.auth_header)
+        self.assertEqual(response.status_code, 400)
+
+    def test_empty_urn_validation(self):
+        del self.test_data['urn']
+
+        response = self.client.post(self.endpoint, self.test_data,
+                                    **self.auth_header)
+        self.assertEqual(response.status_code, 400)
+
+    def test_urn_invalid_format_validation(self):
+        self.test_data['urn'] = "aa/00/43224234/aa/25"
+
         response = self.client.post(self.endpoint, self.test_data,
                                     **self.auth_header)
         self.assertEqual(response.status_code, 400)
 
     def test_valid_submission(self):
-
         factory = APIRequestFactory()
         request = factory.post("/v0/case/", json.dumps(self.test_data),
                                content_type="application/json")
@@ -108,13 +134,13 @@ class CaseAPICallTestCase(APITestCase):
 
         case_view = CaseViewSet.as_view({"post": "create"})
 
-        response = case_view(request)
+        case_view(request)
 
         case = Case.objects.all()[0]
 
         self.assertEqual(Case.objects.all().count(), 1)
         self.assertEqual(case.offences.all().count(), 2)
-        self.assertEqual(case.urn, self.test_data['urn'])
+        self.assertEqual(case.urn, self.test_data["urn"])
 
         self.assertEquals(case.urn, self.test_data["urn"])
 
@@ -129,7 +155,7 @@ class CaseAPICallTestCase(APITestCase):
 
         case_view = CaseViewSet.as_view({"post": "create"})
 
-        response = case_view(request)
+        case_view(request)
 
         case = Case.objects.all()[0]
 

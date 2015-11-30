@@ -7,27 +7,24 @@ var gulp = require('gulp'),
     runSequence = require('run-sequence'),
     vinylPaths = require('vinyl-paths'),
     jasmine = require('gulp-jasmine'),
-    karma = require('karma'),
+    karmaServer = require('karma').Server,
     uglify = require('gulp-uglify'),
     sourcemaps = require('gulp-sourcemaps'),
     sass = require('gulp-sass'),
-    file = require('gulp-file');
+    file = require('gulp-file'),
+    include = require('gulp-include');
 
 var paths = {
-  dest_dir: 'manchester_traffic_offences/assets/',
-  src_dir: 'manchester_traffic_offences/assets-src/',
+  dest_dir: 'make_a_plea/assets/',
+  src_dir: 'make_a_plea/assets-src/',
   styles: [
-    'manchester_traffic_offences/assets-src/stylesheets/**/*.scss',
+    'make_a_plea/assets-src/stylesheets/**/*.scss',
     'node_modules/govuk_frontend_toolkit/stylesheets/**/*.scss'
   ],
-  scripts: [
-    'manchester_traffic_offences/assets-src/javascripts/shims/**/*.js',
-    'manchester_traffic_offences/assets-src/javascripts/modules/**/*.js',
-    'manchester_traffic_offences/assets-src/javascripts/application.js'
-  ],
-  vendor_scripts: 'manchester_traffic_offences/assets-src/javascripts/vendor/**/*.js',
-  test_scripts: 'manchester_traffic_offences/assets-src/tests/**/*.js',
-  images: 'manchester_traffic_offences/assets-src/images/**/*'
+  scripts: 'make_a_plea/assets-src/javascripts/application.js',
+  vendor_scripts: 'make_a_plea/assets-src/javascripts/vendor/**/*.js',
+  test_scripts: 'make_a_plea/assets-src/tests/**/*.js',
+  images: 'make_a_plea/assets-src/images/**/*'
 };
 
 // clean out assets folder
@@ -53,7 +50,7 @@ gulp.task('sass', function() {
       includePaths: [
         'node_modules/govuk_frontend_toolkit/',
         'node_modules/govuk_frontend_toolkit/stylesheets/',
-        'manchester_traffic_offences/assets-src/stylesheets/'
+        'make_a_plea/assets-src/stylesheets/'
       ]
     }))
     .pipe(sourcemaps.write('../maps'))
@@ -62,14 +59,11 @@ gulp.task('sass', function() {
 
 // default js task
 gulp.task('js', function() {
-  paths.main_scripts = paths.scripts.slice(0);
-
-  // ignore debug files
-  paths.main_scripts.push('!' + paths.src_dir + '**/*debug*');
-
   // create concatenated main js file
   gulp
-    .src(paths.main_scripts)
+    .src(paths.scripts)
+    .pipe(include())
+      .on('error', console.log)
     .pipe(sourcemaps.init())
     .pipe(concat('application.js'))
     .pipe(uglify())
@@ -80,23 +74,11 @@ gulp.task('js', function() {
   gulp
     .src(paths.vendor_scripts)
     .pipe(gulp.dest(paths.dest_dir + 'javascripts/vendor'));
-
-  // create debug js file
-  gulp
-    .src(paths.src_dir + 'javascripts/**/*debug*')
-    .pipe(concat('debug.js'))
-    .pipe(gulp.dest(paths.dest_dir + 'javascripts/'));
 });
 
 // jshint
 gulp.task('lint', function() {
   var files = paths.scripts.slice(0);
-
-  // files to ignore from linting
-  files.push('!manchester_traffic_offences/assets-src/vendor/**');
-  files.push('!manchester_traffic_offences/assets-src/shims/**');
-  files.push('!manchester_traffic_offences/assets-src/javascripts/vendor/**');
-  files.push('!node_modules/**');
 
   gulp
     .src(files)
@@ -106,11 +88,11 @@ gulp.task('lint', function() {
 
 // JS Tests
 gulp.task('test', function (done) {
-  karma.server.start({
+  new karmaServer({
     configFile: __dirname + '/karma.conf.js'
   }, function() {
     done();
-  });
+  }).start();
 });
 
 // optimise images

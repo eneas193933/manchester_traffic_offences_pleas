@@ -1,0 +1,287 @@
+/*
+====================================================
+Main styles
+====================================================
+*/
+
+
+
+/*== Start screen ==================================================*/
+.get-started {
+	h2 {
+		margin-bottom: .5em;
+	}
+
+	.panel-indent {
+		margin-top: .5em;
+	}
+}
+
+.related-start {
+	@extend .related;
+	margin-top: 5em;
+}
+
+
+/*== Notice type screen ===================================*/
+.notice-type {
+	h2 {
+		margin-bottom: .25em;
+	}
+}
+
+.help-image {
+	display: none;
+
+	@include media(tablet) {
+		display: block;
+		float: right;
+	}
+}
+
+.with-image {
+	.form-group {
+		&:after {
+			content: none;
+		}
+	}
+
+	@include media(tablet) {
+		margin-right: 300px;
+	}
+}
+
+
+/*== Pleas screen ==========================================*/
+.section-plea {
+	padding-top: 1em;
+
+	fieldset {
+		position: relative;
+	}
+}
+
+
+.form-header-pleas {
+	@extend .form-header;
+
+	border-bottom: none;
+	margin: 0;
+
+	.form-selected {
+		@include core-24;
+		margin: .5em 0;
+		color: $grey-1;
+
+		strong {
+			color: $black;
+		}
+	}
+
+	a {
+		margin: .25em 0 0;
+	}
+}
+
+.charge-details {
+	@include core-16;
+
+	margin-top: .5em;
+}
+
+.js-enabled .charge-details .details-content {
+	@extend .panel-indent;
+	margin-top: 0;
+}
+
+/*== Expenses screen =======================================*/
+#expense-summary {
+
+	th, td {
+		@include core-19;
+		border-bottom: none;
+		font-weight: 400;
+	}
+	td {
+		text-align: right;
+	}
+
+	.total {
+		th, td {
+			font-weight: 700;
+		}
+	}
+}
+
+/*== Review screen ==========================================*/
+.review-section {
+	@extend %contain-floats;
+
+	margin: 0 0 2em;
+	border: 1px solid $grey-2;
+	border-width: 1px 0 0;
+
+	> header {
+		clear: both;
+		padding: 1em 0 0;
+
+		h2,
+		h3 {
+			display: inline-block;
+			margin: 0 0 .25em;
+			@include bold-24();
+
+			@include ie-lte(7) {
+				float: left;
+			}
+		}
+
+		h3 {
+			@include bold-19();
+		}
+
+		.change-link {
+			float: right;
+			margin: .1em 0 0 1em;
+			@include core-19;
+
+			@include media(tablet) {
+				margin-top: .2em;
+			}
+		}
+	}
+
+	dl {
+		margin: 0;
+	}
+
+	dt {
+		float: left;
+		clear: left;
+		width: 40%;
+		padding: .625em 5% .625em 0;
+	}
+
+	dd {
+		float: left;
+		width: 55%;
+		margin: 0;
+		padding: .625em 0 .625em;
+	}
+
+	@include media(tablet) {
+		dt {
+			width: 25%;
+		}
+
+		dd {
+			width: 70%;
+		}
+	}
+}
+
+.review-subsection {
+	@extend .review-section;
+
+	margin-bottom: 1em;
+	border-width: 0;
+}
+
+#section_understand {
+	.block-label {
+		@include core-19;
+		padding: 1em;
+		margin-right: 0;
+
+		.important {
+			@extend p.important;
+			font-weight: bold;
+			display: block;
+			margin: 0 0 1.25em;
+		}
+
+		input {
+			position: static;
+			float: left;
+			margin: 0 .5em;
+			@include core-24;
+
+			@include media(tablet) {
+				margin: .125em .375em;
+			}
+		}
+
+		.checkbox-text {
+			display: block;
+			margin-left: 40px;
+		}
+	}
+}
+
+
+/*== Complete screen ===============================================*/
+.success-header {
+	margin: 2em 0;
+	padding: 40px;
+	background: $turquoise;
+	color: $white;
+
+	h1,
+	p {
+		@include bold-36();
+		margin: 0;
+	}
+
+	.ticked {
+		padding-left: 40px;
+		background: url(../images/icons/tick.png) 0 7px no-repeat;
+	}
+}
+
+.next-steps {
+	.heading-medium,
+	.heading-small {
+		margin-bottom: .5em;
+	}
+
+	.panel-indent {
+		margin-top: .5em;
+	}
+}
+
+
+/*== Feedback screen ================================================*/
+#section_feedback_satisfaction {
+	legend.form-label-bold {
+		@include core-19;
+	}
+}
+
+/*== Court Finder ===================================================*/
+.court-details {
+	h2.heading-medium {
+		margin-bottom: 0;
+	}
+}
+
+
+
+/*== Terms ==========================================================*/
+.cookies-table {
+	margin-bottom: 1em;
+
+	th, td {
+		@include core-19;
+		vertical-align: top;
+	}
+	th {
+		font-weight: 700;
+	}
+
+	.name {
+		width: 10%;
+	}
+	.purpose {
+		width: 60%;
+	}
+}

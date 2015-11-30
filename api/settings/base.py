@@ -1,4 +1,4 @@
-from manchester_traffic_offences.settings.base import *
+from make_a_plea.settings.base import *
 
 ROOT_URLCONF = 'api.urls'
 
@@ -16,7 +16,7 @@ INSTALLED_APPS = (
 
 PROJECT_APPS = (
     'moj_template',
-    'apps.govuk_utils',
+    'apps.forms',
     'apps.plea',
     'api',
     'api.v0',
@@ -48,7 +48,3 @@ try:
     from .local import *
 except ImportError:
     pass
-
-# importing test settings file if necessary (TODO could be done better)
-if len(sys.argv) > 1 and 'test' or 'harvest' in sys.argv[1]:
-    from .testing import *

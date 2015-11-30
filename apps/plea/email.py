@@ -10,6 +10,7 @@ from django.utils.translation import ugettext_lazy as _
 from .models import Case, CourtEmailCount, Court
 from .encrypt import encrypt_and_store_user_data
 from tasks import email_send_court, email_send_prosecutor, email_send_user
+from standardisers import format_for_region
 
 
 logger = logging.getLogger(__name__)
@@ -23,12 +24,12 @@ def get_plea_type(context_data):
         or mixed - returns "mixed"
     """
 
-    guilty_count = len([plea for plea in context_data['plea']['PleaForms']
-                        if plea['guilty'] == "guilty"])
+    guilty_count = len([plea for plea in context_data["plea"]["data"]
+                        if plea["guilty"] == "guilty"])
 
     if guilty_count == 0:
         return "not_guilty"
-    elif guilty_count == len(context_data['plea']['PleaForms']):
+    elif guilty_count == len(context_data["plea"]["data"]):
         return "guilty"
     else:
         return "mixed"
@@ -49,10 +50,13 @@ def send_plea_email(context_data):
         raise
 
     # add DOH / name to the email subject for compliance with the current format
-    if isinstance(context_data["case"]["date_of_hearing"], basestring):
-        date_of_hearing = parser.parse(context_data["case"]["date_of_hearing"])
-    else:
-        date_of_hearing = context_data["case"]["date_of_hearing"]
+    if context_data["notice_type"]["sjp"] is False:
+        if isinstance(context_data["case"]["date_of_hearing"], basestring):
+            date_of_hearing = parser.parse(context_data["case"]["date_of_hearing"])
+        else:
+            date_of_hearing = context_data["case"]["date_of_hearing"]
+
+        context_data["email_date_of_hearing"] = date_of_hearing.strftime("%Y-%m-%d")
 
     if context_data["case"]["plea_made_by"] == "Defendant":
         first_name = context_data["your_details"]["first_name"]
@@ -62,23 +66,25 @@ def send_plea_email(context_data):
         last_name = context_data["company_details"]["last_name"]
 
     context_data["email_name"] = " ".join([last_name.upper(), first_name])
-    context_data["email_date_of_hearing"] = date_of_hearing.strftime("%Y-%m-%d")
 
     # Add Welsh flag if journey was completed in Welsh
     if translation.get_language() == "cy":
         context_data["welsh_language"] = True
 
     # Get or create case
-    try:
-        case = Case.objects.get(urn__iexact=context_data["case"]["urn"].upper(), sent=False)
-    except Case.DoesNotExist:
+    cases = Case.objects.filter(urn__iexact=context_data["case"]["urn"].upper(), sent=False)
+    if len(cases) == 0:
         case = Case(urn=context_data["case"]["urn"].upper(), sent=False)
-        case.save()
+    else:
+        case = cases[0]
 
-    if "court" in context_data:
-        del context_data["court"]
+    if context_data["notice_type"]["sjp"]:
+        case.initiation_type = "J"
 
-    if getattr(settings, 'STORE_USER_DATA', False):
+    case.language = translation.get_language().split("-")[0]
+    case.save()
+
+    if getattr(settings, "STORE_USER_DATA", False):
         encrypt_and_store_user_data(case.urn, case.id, context_data)
 
     if not court_obj.test_mode:
@@ -93,50 +99,41 @@ def send_plea_email(context_data):
         # use a fake email count ID as we're using a test record
         email_count_id = "XX"
 
-    email_body = "<<<makeaplea-ref: {}/{}>>>".format(case.id, email_count_id)
-
     email_send_court.delay(case.id, email_count_id, context_data)
 
     if court_obj.plp_email:
         email_send_prosecutor.delay(case.id, context_data)
 
+    send_user_email = context_data.get("review", {}).get("receive_email_updates", False)
     email_address = context_data.get("review", {}).get("email", False)
 
-    if not email_address:
-        case.add_action("No email entered, user email not sent", "")
-        return True
+    if send_user_email and email_address:
+        data = {
+            "urn": format_for_region(context_data["case"]["urn"]),
+            "plea_made_by": context_data["case"]["plea_made_by"],
+            "number_of_charges": context_data["case"]["number_of_charges"],
+            "contact_deadline": context_data["case"]["contact_deadline"],
+            "plea_type": get_plea_type(context_data),
+            "court_address": court_obj.court_address,
+            "court_email": court_obj.court_email
+        }
 
-    if context_data['case']['plea_made_by'] == "Defendant":
-        first_name = context_data['your_details']['first_name']
-        last_name = context_data['your_details']['last_name']
+        email_template = "emails/user_plea_confirmation"
+
+        try:
+            if context_data["notice_type"]["sjp"]:
+                email_template = "emails/user_plea_confirmation_sjp"
+        except KeyError:
+            pass
+
+        html_body = render_to_string(email_template + ".html", data)
+        txt_body = wrap(render_to_string(email_template + ".txt", data), 72)
+
+        subject = _("Online plea submission confirmation")
+
+        email_send_user.delay(case.id, email_address, subject, html_body, txt_body)
+
     else:
-        first_name = context_data['company_details']['first_name']
-        last_name = context_data['company_details']['last_name']
-
-    data = {
-        'email': email_address,
-        'urn': context_data['case']['urn'],
-        'plea_made_by': context_data['case']['plea_made_by'],
-        'number_of_charges': context_data['case']['number_of_charges'],
-        'plea_type': get_plea_type(context_data),
-        'first_name': first_name,
-        'last_name': last_name,
-        'court_address': court_obj.court_address,
-        'court_email': court_obj.court_email
-    }
-
-    html_body = render_to_string("emails/user_plea_confirmation.html", data)
-    txt_body = wrap(render_to_string("emails/user_plea_confirmation.txt", data), 72)
-
-    subject = _("Online plea submission confirmation")
-
-    email_send_user.delay(case.id, email_address, subject, html_body, txt_body)
-
-    case.sent = True
-    case.save()
-
-    if not court_obj.test_mode:
-        email_count.sent = True
-        email_count.save()
+        case.add_action("No email entered, user email not sent", "")
 
     return True

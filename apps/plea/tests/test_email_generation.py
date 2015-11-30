@@ -5,10 +5,11 @@ import re
 from django.test import TestCase
 from django.core import mail
 
-from apps.govuk_utils.email import TemplateAttachmentEmail
+from apps.plea.attachment import TemplateAttachmentEmail
 
 from ..email import send_plea_email
 from ..models import Case, CourtEmailCount, Court
+from ..standardisers import format_for_region
 
 
 class EmailGenerationTests(TestCase):
@@ -28,8 +29,10 @@ class EmailGenerationTests(TestCase):
             enabled=True,
             test_mode=False)
 
-        self.test_data_defendant = {"case": {"urn": "06xcvx89",
+        self.test_data_defendant = {"notice_type": {"sjp": False},
+                                    "case": {"urn": "06xcvx89",
                                              "date_of_hearing": "2014-06-30",
+                                             "contact_deadline": "2014-06-30",
                                              "number_of_charges": 2,
                                              "plea_made_by": "Defendant"},
                                     "your_details": {"updated_address": "Some place",
@@ -37,14 +40,16 @@ class EmailGenerationTests(TestCase):
                                                      "last_name": "cx",
                                                      "contact_number": "07000000000",
                                                      "date_of_birth": "1970-01-01"},
-                                    "plea": {"PleaForms": [{"guilty": "guilty", "guilty_extra": "test1"},
-                                                           {"guilty": "guilty", "guilty_extra": "test2"}]},
+                                    "plea": {"data": [{"guilty": "guilty", "guilty_extra": "test1"},
+                                                       {"guilty": "guilty", "guilty_extra": "test2"}]},
                                     "review": {"receive_email_updates": True,
                                                "email": "test@test.com",
                                                "understand": True}}
 
-        self.test_data_company = {"case": {"urn": "06xcvx89",
+        self.test_data_company = {"notice_type": {"sjp": False},
+                                  "case": {"urn": "06xcvx89",
                                            "date_of_hearing": "2014-06-30",
+                                           "contact_deadline": "2014-06-30",
                                            "number_of_charges": 2,
                                            "plea_made_by": "Company representative"},
                                   "your_details": {"complete": True,
@@ -55,19 +60,19 @@ class EmailGenerationTests(TestCase):
                                                       "last_name": "Smith",
                                                       "position_in_company": "a director",
                                                       "contact_number": "0800 SOMECOMPANY"},
-                                  "plea": {"PleaForms": [{"guilty": "guilty", "guilty_extra": "test1"},
-                                                         {"guilty": "guilty", "guilty_extra": "test2"}]},
+                                  "plea": {"data": [{"guilty": "guilty", "guilty_extra": "test1"},
+                                                     {"guilty": "guilty", "guilty_extra": "test2"}]},
                                   "review": {"receive_email_updates": True,
                                              "email": "test@test.com",
                                              "understand": True}}
 
     def test_template_attachment_sends_email(self):
-        email_context = {"URN": "062B3C4D5E"}
+        email_context = {"case": {"urn": "062B3C4D5E"}}
         email = TemplateAttachmentEmail("test_from@example.org",
                                         "test.html",
                                         "emails/attachments/plea_email.html",
                                         email_context,
-                                        "<p>Test Content</p><br><p>{{ URN }}</p>")
+                                        "<p>Test Content</p><br><p>{{ urn }}</p>")
 
         email.send(["test_to@example.org", ],
                    "Subject line",
@@ -80,6 +85,24 @@ class EmailGenerationTests(TestCase):
         send_plea_email(self.test_data_defendant)
 
         self.assertEqual(len(mail.outbox), 3)
+
+    def test_plea_email_adds_to_court_stats(self):
+        send_plea_email(self.test_data_defendant)
+
+        court_stats_count = CourtEmailCount.objects.count()
+
+        self.assertEqual(court_stats_count, 1)
+
+    def test_sjp_plea_email_adds_to_court_stats(self):
+        self.test_data_defendant["notice_type"]["sjp"] = True
+        self.test_data_defendant["case"]["posting_date"] = "2014-06-30"
+        del self.test_data_defendant["case"]["date_of_hearing"]
+
+        send_plea_email(self.test_data_defendant)
+
+        court_stats_count = CourtEmailCount.objects.count()
+
+        self.assertEqual(court_stats_count, 1)
 
     def test_plea_email_body_contains_plea_and_count_ids(self):
         send_plea_email(self.test_data_defendant)
@@ -103,12 +126,13 @@ class EmailGenerationTests(TestCase):
         send_plea_email(self.test_data_defendant)
 
         self.assertEqual(len(mail.outbox), 3)
-        self.assertIn(self.test_data_defendant['case']['urn'].upper(), mail.outbox[-1].body)
-        self.assertIn(self.test_data_defendant['case']['urn'].upper(), mail.outbox[-1].alternatives[0][0])
+        self.assertIn(format_for_region(self.test_data_defendant['case']['urn']), mail.outbox[-1].body)
+        self.assertIn(format_for_region(self.test_data_defendant['case']['urn']), mail.outbox[-1].alternatives[0][0])
         self.assertIn(self.test_data_defendant['review']['email'], mail.outbox[-1].to)
 
     def test_user_confirmation_sends_no_email(self):
         self.test_data_defendant.update({"review": {"receive_email_updates": False,
+                                                    "email": "test@test.com",
                                                     "understand": True}})
         send_plea_email(self.test_data_defendant)
 
@@ -118,8 +142,8 @@ class EmailGenerationTests(TestCase):
         send_plea_email(self.test_data_company)
 
         self.assertEqual(len(mail.outbox), 3)
-        self.assertIn(self.test_data_company['case']['urn'].upper(), mail.outbox[-1].body)
-        self.assertIn(self.test_data_company['case']['urn'].upper(), mail.outbox[-1].alternatives[0][0])
+        self.assertIn(format_for_region(self.test_data_company['case']['urn']), mail.outbox[-1].body)
+        self.assertIn(format_for_region(self.test_data_company['case']['urn']), mail.outbox[-1].alternatives[0][0])
         self.assertIn(self.test_data_company['review']['email'], mail.outbox[-1].to)
 
     def test_email_addresses_from_court_model(self):

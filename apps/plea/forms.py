@@ -1,30 +1,42 @@
 from __future__ import unicode_literals
 
+from collections import OrderedDict
+
 from django import forms
 from django.forms.widgets import Textarea, RadioSelect
 from django.utils.translation import ugettext_lazy as _
 
-from apps.govuk_utils.fields import DSRadioFieldRenderer, DateWidget
-from apps.govuk_utils.forms import (YESNO_CHOICES,
-                                    to_bool,
-                                    BaseStageForm,
-                                    SplitStageForm)
+from apps.forms.fields import DSRadioFieldRenderer, DateWidget
+from apps.forms.forms import (YESNO_CHOICES,
+                              to_bool,
+                              BaseStageForm,
+                              SplitStageForm)
 
 from .fields import ERROR_MESSAGES
 from .validators import (is_date_in_past,
                          is_date_in_future,
-                         is_date_within_range,
+                         is_date_in_last_28_days,
+                         is_date_in_next_6_months,
                          is_urn_not_used,
                          is_urn_valid)
 
 
-class CaseForm(BaseStageForm):
-    PLEA_MADE_BY_CHOICES = (
-        ("Defendant", _("The person named in the notice")),
-        ("Company representative", _("Pleading on behalf of a company")))
+PERIOD_CHOICES = (("Weekly", _("Weekly")),
+                  ("Fortnightly", _("Fortnightly")),
+                  ("Monthly", _("Monthly")))
 
+
+def reorder_fields(fields, order):
+    for key, v in fields.items():
+        if key not in order:
+            del fields[key]
+
+    return OrderedDict(sorted(fields.items(), key=lambda k: order.index(k[0])))
+
+
+class URNEntryForm(BaseStageForm):
     urn = forms.CharField(widget=forms.TextInput(attrs={"class": "form-control"}),
-                          label=_("Unique reference number (URN)"),
+                          label=_("What is your Unique Reference Number (URN)?"),
                           required=True,
                           validators=[is_urn_valid, is_urn_not_used],
                           help_text=_("On page 1 of the notice, usually at the top."),
@@ -32,15 +44,23 @@ class CaseForm(BaseStageForm):
                                           "is_urn_valid": ERROR_MESSAGES["URN_INVALID"],
                                           "is_urn_not_used": ERROR_MESSAGES['URN_ALREADY_USED']})
 
-    date_of_hearing = forms.DateField(widget=DateWidget,
-                                      validators=[is_date_in_future, is_date_within_range],
-                                      required=True,
-                                      label=_("Court hearing date"),
-                                      help_text=_("On page 1 of the notice, near the top. <br>For example, 30/07/2014"),
-                                      error_messages={"required": ERROR_MESSAGES["HEARING_DATE_REQUIRED"],
-                                                      "invalid": ERROR_MESSAGES["HEARING_DATE_INVALID"],
-                                                      "is_date_in_future": ERROR_MESSAGES["HEARING_DATE_PASSED"],
-                                                      "is_date_within_range": ERROR_MESSAGES["HEARING_DATE_INCORRECT"]})
+
+class NoticeTypeForm(BaseStageForm):
+    SJP_CHOICES = ((True, _("Single Justice Procedure Notice")),
+                   (False, _("Something else")))
+
+    sjp = forms.TypedChoiceField(widget=RadioSelect(renderer=DSRadioFieldRenderer),
+                                 required=True,
+                                 coerce=to_bool,
+                                 choices=SJP_CHOICES,
+                                 label=_("What is the title at the very top of the page?"),
+                                 error_messages={"required": ERROR_MESSAGES["NOTICE_TYPE_REQUIRED"]})
+
+
+class BaseCaseForm(BaseStageForm):
+    PLEA_MADE_BY_CHOICES = (
+        ("Defendant", _("The person named in the notice")),
+        ("Company representative", _("Pleading on behalf of a company")))
 
     number_of_charges = forms.IntegerField(label=_("Number of charges"),
                                            widget=forms.TextInput(attrs={"pattern": "[0-9]*",
@@ -56,6 +76,40 @@ class CaseForm(BaseStageForm):
                                           label=_("Are you? (plea made by)"),
                                           help_text=_("Choose one of the following options:"),
                                           error_messages={"required": ERROR_MESSAGES["PLEA_MADE_BY_REQUIRED"]})
+
+
+class CaseForm(BaseCaseForm):
+    date_of_hearing = forms.DateField(widget=DateWidget,
+                                      validators=[is_date_in_future, is_date_in_next_6_months],
+                                      required=True,
+                                      label=_("Court hearing date"),
+                                      help_text=_("On page 1 of the notice, near the top. <br>For example, 30/07/2014"),
+                                      error_messages={"required": ERROR_MESSAGES["HEARING_DATE_REQUIRED"],
+                                                      "invalid": ERROR_MESSAGES["HEARING_DATE_INVALID"],
+                                                      "is_date_in_future": ERROR_MESSAGES["HEARING_DATE_PASSED"],
+                                                      "is_date_in_next_6_months": ERROR_MESSAGES["HEARING_DATE_INCORRECT"]})
+
+    def __init__(self, *args, **kwargs):
+        super(CaseForm, self).__init__(*args, **kwargs)
+        fields_order = ["urn", "date_of_hearing", "number_of_charges", "plea_made_by"]
+        self.fields = reorder_fields(self.fields, fields_order)
+
+
+class SJPCaseForm(BaseCaseForm):
+    posting_date = forms.DateField(widget=DateWidget,
+                                   validators=[is_date_in_past, is_date_in_last_28_days],
+                                   required=True,
+                                   label=_("Posting date"),
+                                   help_text=_("On page 1 of the notice, near the top. <br>For example, 30/07/2014"),
+                                   error_messages={"required": ERROR_MESSAGES["POSTING_DATE_REQUIRED"],
+                                                   "invalid": ERROR_MESSAGES["POSTING_DATE_INVALID"],
+                                                   "is_date_in_past": ERROR_MESSAGES["POSTING_DATE_IN_FUTURE"],
+                                                   "is_date_in_last_28_days": ERROR_MESSAGES["POSTING_DATE_INCORRECT"]})
+
+    def __init__(self, *args, **kwargs):
+        super(SJPCaseForm, self).__init__(*args, **kwargs)
+        fields_order = ["urn", "posting_date", "number_of_charges", "plea_made_by"]
+        self.fields = reorder_fields(self.fields, fields_order)
 
 
 class YourDetailsForm(BaseStageForm):
@@ -118,7 +172,7 @@ class YourDetailsForm(BaseStageForm):
     have_ni_number = forms.TypedChoiceField(widget=RadioSelect(renderer=DSRadioFieldRenderer),
                                             required=True,
                                             coerce=to_bool,
-                                            choices=YESNO_CHOICES["Ydy/Nac ydy"],
+                                            choices=YESNO_CHOICES["Oes/Nac oes"],
                                             label=_("Do you have a National Insurance number?"),
                                             error_messages={"required": ERROR_MESSAGES["HAVE_NI_NUMBER_REQUIRED"]})
 
@@ -131,7 +185,7 @@ class YourDetailsForm(BaseStageForm):
     have_driving_licence_number = forms.TypedChoiceField(widget=RadioSelect(renderer=DSRadioFieldRenderer),
                                                          required=True,
                                                          coerce=to_bool,
-                                                         choices=YESNO_CHOICES["Ydy/Nac ydy"],
+                                                         choices=YESNO_CHOICES["Oes/Nac oes"],
                                                          label=_("Do you have a UK driving licence?"),
                                                          help_text=_("Entering your UK driving licence number means you don't have to send your licence to the court."),
                                                          error_messages={"required": ERROR_MESSAGES["HAVE_DRIVING_LICENCE_NUMBER_REQUIRED"]})
@@ -139,7 +193,7 @@ class YourDetailsForm(BaseStageForm):
     driving_licence_number = forms.CharField(widget=forms.TextInput(attrs={"class": "form-control"}),
                                              required=True,
                                              label="",
-                                             help_text=_("If yes, enter it here. It's on your driving licence photocard and starts with letters from your last name."),
+                                             help_text=_("If yes, enter it here. Your driving licence number is in section 5 of your driving licence photocard."),
                                              error_messages={"required": ERROR_MESSAGES["DRIVING_LICENCE_NUMBER_REQUIRED"]})
 
 
@@ -201,73 +255,27 @@ class CompanyDetailsForm(BaseStageForm):
                                      error_messages={"required": ERROR_MESSAGES["COMPANY_CONTACT_NUMBER_REQUIRED"],
                                                      "invalid": ERROR_MESSAGES["CONTACT_NUMBER_INVALID"]})
 
-
-class YourMoneyForm(SplitStageForm):
-
+class YourStatusForm(BaseStageForm):
     YOU_ARE_CHOICES = (("Employed", _("Employed")),
                        ("Self-employed", _("Self-employed")),
                        ("Receiving benefits", _("Receiving benefits")),
                        ("Other", _("Other")))
-    PERIOD_CHOICES = (("Weekly", _("Weekly")),
-                      ("Fortnightly", _("Fortnightly")),
-                      ("Monthly", _("Monthly")))
-    SE_PERIOD_CHOICES = (("Weekly", _("Weekly")),
-                         ("Fortnightly", _("Fortnightly")),
-                         ("Monthly", _("Monthly")),
-                         ("Self-employed other", _("Other")),)
-    BEN_PERIOD_CHOICES = (("Weekly", _("Weekly")),
-                         ("Fortnightly", _("Fortnightly")),
-                         ("Monthly", _("Monthly")),
-                         ("Benefits other", _("Other")),)
-
-    dependencies = {
-        "employed_take_home_pay_period": {"field": "you_are", "value": "Employed"},
-        "employed_take_home_pay_amount": {"field": "you_are", "value": "Employed"},
-        "employed_hardship": {"field": "you_are", "value": "Employed"},
-
-        "self_employed_pay_period": {"field": "you_are",
-                                     "value": "Self-employed",
-                                     "dependencies": {"self_employed_pay_other": {"field": "self_employed_pay_period",
-                                                                                  "value": "Self-employed other" }}},
-
-        "self_employed_pay_amount": {"field": "you_are", "value": "Self-employed"},
-        "self_employed_hardship": {"field": "you_are", "value": "Self-employed"},
-
-        "benefits_details": {"field": "you_are", "value": "Receiving benefits"},
-        "benefits_dependents": {"field": "you_are", "value": "Receiving benefits"},
-        "benefits_period": {"field": "you_are",
-                            "value": "Receiving benefits",
-                            "dependencies": {"benefits_pay_other": {"field": "benefits_period",
-                                                                    "value": "Benefits other"}}},
-        "benefits_amount": {"field": "you_are", "value": "Receiving benefits"},
-        "receiving_benefits_hardship": {"field": "you_are", "value": "Receiving benefits"},
-
-        "other_details": {"field": "you_are", "value": "Other"},
-        "other_pay_amount": {"field": "you_are", "value": "Other"},
-        "other_hardship": {"field": "you_are", "value": "Other"}
-    }
-
-    split_form_options = {
-        "trigger": "you_are"
-    }
 
     you_are = forms.ChoiceField(label=_("Are you? (employment status)"), choices=YOU_ARE_CHOICES,
                                 widget=forms.RadioSelect(renderer=DSRadioFieldRenderer),
                                 error_messages={"required": ERROR_MESSAGES["YOU_ARE_REQUIRED"]})
-    # Employed
-    employed_take_home_pay_period = forms.ChoiceField(widget=RadioSelect(renderer=DSRadioFieldRenderer),
+
+class YourFinancesEmployedForm(BaseStageForm):
+    employed_pay_period = forms.ChoiceField(widget=RadioSelect(renderer=DSRadioFieldRenderer),
                                                       choices=PERIOD_CHOICES,
                                                       label=_("How often do you get paid?"),
                                                       error_messages={"required": ERROR_MESSAGES["PAY_PERIOD_REQUIRED"],
                                                                       "incomplete": ERROR_MESSAGES["PAY_PERIOD_REQUIRED"]})
 
-    employed_take_home_pay_amount = forms.DecimalField(label=_("What's your take home pay (after tax)?"),
+    employed_pay_amount = forms.DecimalField(label=_("What's your take home pay (after tax)?"),
                                                        localize=True,
                                                        widget=forms.TextInput(attrs={"pattern": "[0-9]*",
-                                                                                     "data-template-trigger": "employed_take_home_pay_period",
-                                                                                     "data-template": _("What's your {value} take home pay (after tax)?"),
-                                                                                     "data-template-delegate": "[for=id_employed_take_home_pay_amount] .label-text",
-                                                                                     "class": "form-control-inline js-TemplatedElement"}),
+                                                                                     "class": "form-control-inline"}),
                                                        error_messages={"required": ERROR_MESSAGES["PAY_AMOUNT_REQUIRED"],
                                                                        "incomplete": ERROR_MESSAGES["PAY_AMOUNT_REQUIRED"]})
 
@@ -278,7 +286,16 @@ class YourMoneyForm(SplitStageForm):
                                                coerce=to_bool,
                                                error_messages={"required": ERROR_MESSAGES["HARDSHIP_REQUIRED"]})
 
-    # Self-employed
+class YourFinancesSelfEmployedForm(BaseStageForm):
+    SE_PERIOD_CHOICES = (("Weekly", _("Weekly")),
+                         ("Fortnightly", _("Fortnightly")),
+                         ("Monthly", _("Monthly")),
+                         ("Other", _("Other")),)
+
+    dependencies = {
+        "self_employed_pay_other": {"field": "self_employed_pay_period", "value": "Other"}
+    }
+
     self_employed_pay_period = forms.ChoiceField(widget=RadioSelect(renderer=DSRadioFieldRenderer),
                                                  choices=SE_PERIOD_CHOICES,
                                                  label=_("How often do you get paid?"),
@@ -288,18 +305,9 @@ class YourMoneyForm(SplitStageForm):
     self_employed_pay_amount = forms.DecimalField(label=_("What's your average take home pay?"),
                                                   localize=True,
                                                   widget=forms.TextInput(attrs={"pattern": "[0-9]*",
-                                                                                "data-template-trigger": "self_employed_pay_period",
-                                                                                "data-template": _("What's your average {value} take home pay?"),
-                                                                                "data-template-defaults-for": _("Other"),
-                                                                                "data-template-delegate": "[for=id_self_employed_pay_amount] .label-text",
-                                                                                "class": "form-control-inline js-TemplatedElement"}),
+                                                                                "class": "form-control-inline"}),
                                                   error_messages={"required": ERROR_MESSAGES["PAY_AMOUNT_REQUIRED"],
                                                                   "incomplete": ERROR_MESSAGES["PAY_AMOUNT_REQUIRED"]})
-
-    self_employed_pay_other = forms.CharField(label="",
-                                              max_length=500,
-                                              widget=forms.Textarea(attrs={"rows": "2", "class": "form-control"}),
-                                              help_text=_("If you selected 'other', tell us how often you get paid."))
 
     self_employed_hardship = forms.TypedChoiceField(label=_("Would paying a fine cause you serious financial problems?"),
                                                     help_text=_("For example, you would become homeless."),
@@ -308,7 +316,16 @@ class YourMoneyForm(SplitStageForm):
                                                     coerce=to_bool,
                                                     error_messages={"required": ERROR_MESSAGES["HARDSHIP_REQUIRED"]})
 
-    # On benefits
+class YourFinancesBenefitsForm(BaseStageForm):
+    BEN_PERIOD_CHOICES = (("Weekly", _("Weekly")),
+                         ("Fortnightly", _("Fortnightly")),
+                         ("Monthly", _("Monthly")),
+                         ("Other", _("Other")),)
+
+    dependencies = {
+        "benefits_pay_other": {"field": "benefits_pay_period", "value": "Other"}
+    }
+
     benefits_details = forms.CharField(label=_("Which benefits do you receive?"),
                                        help_text=_("For example, Income Support or Disability Living Allowance."),
                                        max_length=500,
@@ -321,36 +338,27 @@ class YourMoneyForm(SplitStageForm):
                                             label=_("Does this include payment for dependants?"),
                                             error_messages={"required": ERROR_MESSAGES["BENEFITS_DEPENDANTS_REQUIRED"]})
 
-    benefits_period = forms.ChoiceField(widget=RadioSelect(renderer=DSRadioFieldRenderer),
+    benefits_pay_period = forms.ChoiceField(widget=RadioSelect(renderer=DSRadioFieldRenderer),
                                         choices=BEN_PERIOD_CHOICES,
                                         label=_("How often are your benefits paid?"),
                                         error_messages={"required": ERROR_MESSAGES["PAY_PERIOD_REQUIRED"],
                                                         "incomplete": ERROR_MESSAGES["PAY_PERIOD_REQUIRED"]})
 
-    benefits_pay_other = forms.CharField(label="",
-                                         max_length=500,
-                                         widget=forms.Textarea(attrs={"rows": "2", "class": "form-control"}),
-                                         help_text=_("If you selected 'other', tell us how often you get paid."))
-
-    benefits_amount = forms.DecimalField(label=_("What's your average take home pay?"),
+    benefits_pay_amount = forms.DecimalField(label=_("What's your average take home pay?"),
                                          localize=True,
                                          widget=forms.TextInput(attrs={"pattern": "[0-9]*",
-                                                                       "data-template-trigger": "benefits_period",
-                                                                       "data-template": _("What's your average {value} take home pay?"),
-                                                                       "data-template-defaults-for": _("Other"),
-                                                                       "data-template-delegate": "[for=id_benefits_amount] .label-text",
-                                                                       "class": "form-control-inline js-TemplatedElement"}),
+                                                                       "class": "form-control-inline"}),
                                          error_messages={"required": ERROR_MESSAGES["PAY_AMOUNT_REQUIRED"],
                                                          "incomplete": ERROR_MESSAGES["PAY_AMOUNT_REQUIRED"]})
 
-    receiving_benefits_hardship = forms.TypedChoiceField(label=_("Would paying a fine cause you serious financial problems?"),
+    benefits_hardship = forms.TypedChoiceField(label=_("Would paying a fine cause you serious financial problems?"),
                                                          help_text=_("For example, you would become homeless."),
                                                          widget=RadioSelect(renderer=DSRadioFieldRenderer),
                                                          choices=YESNO_CHOICES["Byddai/Na fyddai"],
                                                          coerce=to_bool,
                                                          error_messages={"required": ERROR_MESSAGES["HARDSHIP_REQUIRED"]})
 
-    # Other
+class YourFinancesOtherForm(BaseStageForm):
     other_details = forms.CharField(max_length=500, label=_("Provide details"),
                                     help_text=_("For example, student or retired."),
                                     widget=forms.TextInput(attrs={"class": "form-control"}),
@@ -374,7 +382,7 @@ class YourMoneyForm(SplitStageForm):
 class HardshipForm(BaseStageForm):
     hardship_details = forms.CharField(
         label=_("How would paying a fine cause you serious financial problems?"),
-        help_text=_("What the court should consider when deciding how much your fine should be:"),
+        help_text=_("Why you think the court should allow you to pay your fine in instalments:"),
         widget=forms.Textarea(attrs={"cols": 45, "rows": 5, "class": "form-control"}),
         required=True,
         error_messages={"required": ERROR_MESSAGES["HARDSHIP_DETAILS_REQUIRED"]})
@@ -571,7 +579,6 @@ class CompanyFinancesForm(SplitStageForm):
                                       localize=True,
                                       error_messages={"required": ERROR_MESSAGES["COMPANY_NET_TURNOVER"]})
 
-
     def __init__(self, *args, **kwargs):
         super(CompanyFinancesForm, self).__init__(*args, **kwargs)
 
@@ -610,28 +617,11 @@ class ConfirmationForm(BaseStageForm):
                                     error_messages={"required": ERROR_MESSAGES["UNDERSTAND_REQUIRED"]})
 
 
-class PleaForm(SplitStageForm):
+class BasePleaForm(SplitStageForm):
     PLEA_CHOICES = (
         ('guilty', _('Guilty')),
         ('not_guilty', _('Not guilty')),
     )
-
-    dependencies = {
-        "not_guilty_extra": {
-            "field": "guilty",
-            "value": "not_guilty"
-        },
-        "interpreter_needed": {
-            "field": "guilty",
-            "value": "not_guilty",
-            "dependencies": {
-                "interpreter_language": {
-                    "field": "interpreter_needed",
-                    "value": "True"
-                }
-            }
-        }
-    }
 
     split_form_options = {
         "trigger": "guilty",
@@ -666,6 +656,117 @@ class PleaForm(SplitStageForm):
                                            label="",
                                            help_text=_("If yes, tell us which language (include sign language):"),
                                            error_messages={"required": ERROR_MESSAGES["INTERPRETER_LANGUAGE_REQUIRED"]})
+
+    disagree_with_evidence = forms.TypedChoiceField(widget=RadioSelect(renderer=DSRadioFieldRenderer),
+                                                    required=True,
+                                                    choices=YESNO_CHOICES["Ydw/Nac ydw"],
+                                                    coerce=to_bool,
+                                                    label=_("Do you disagree with any evidence from a witness statement in the notice we sent to you?"),
+                                                    error_messages={"required": ERROR_MESSAGES["DISAGREE_WITH_EVIDENCE_REQUIRED"]})
+
+    disagree_with_evidence_details = forms.CharField(label="",
+                                                     widget=Textarea(attrs={"class": "form-control", "rows": "3"}),
+                                                     help_text=_("If yes, tell us the name of the witness (on the top left of the statement) and what you disagree with:"),
+                                                     max_length=5000,
+                                                     error_messages={"required": ERROR_MESSAGES["DISAGREE_WITH_EVIDENCE_DETAILS_REQUIRED"]})
+
+    witness_needed = forms.TypedChoiceField(widget=RadioSelect(renderer=DSRadioFieldRenderer),
+                                            required=True,
+                                            choices=YESNO_CHOICES["Hoffwn/Na hoffwn"],
+                                            coerce=to_bool,
+                                            label=_("Do you want to call a defence witness?"),
+                                            help_text=_("Someone who can give evidence in court supporting your case."),
+                                            error_messages={"required": ERROR_MESSAGES["WITNESS_NEEDED_REQUIRED"]})
+
+    witness_details = forms.CharField(label="",
+                                      widget=Textarea(attrs={"class": "form-control", "rows": "3"}),
+                                      help_text=_("If yes, tell us the name, address and date of birth of any witnesses you want to call  to support your case:"),
+                                      max_length=5000,
+                                      error_messages={"required": ERROR_MESSAGES["WITNESS_DETAILS_REQUIRED"]})
+
+    witness_interpreter_needed = forms.TypedChoiceField(widget=RadioSelect(renderer=DSRadioFieldRenderer),
+                                                        required=True,
+                                                        choices=YESNO_CHOICES["Oes/Nac oes"],
+                                                        coerce=to_bool,
+                                                        label=_("Does your witness need an interpreter in court?"),
+                                                        error_messages={"required": ERROR_MESSAGES["WITNESS_INTERPRETER_NEEDED_REQUIRED"]})
+
+    witness_interpreter_language = forms.CharField(widget=forms.TextInput(attrs={"class": "form-control"}),
+                                                   max_length=100,
+                                                   required=True,
+                                                   label="",
+                                                   help_text=_("If yes, tell us which language (include sign language):"),
+                                                   error_messages={"required": ERROR_MESSAGES["WITNESS_INTERPRETER_LANGUAGE_REQUIRED"]})
+
+class PleaForm(BasePleaForm):
+    dependencies = OrderedDict([
+        ("not_guilty_extra", {"field": "guilty", "value": "not_guilty"}),
+        ("interpreter_needed", {"field": "guilty", "value": "not_guilty"}),
+        ("interpreter_language", {"field": "interpreter_needed", "value": "True"}),
+        ("disagree_with_evidence", {"field": "guilty", "value": "not_guilty"}),
+        ("disagree_with_evidence_details", {"field": "disagree_with_evidence", "value": "True"}),
+        ("witness_needed", {"field": "guilty", "value": "not_guilty"}),
+        ("witness_details", {"field": "witness_needed", "value": "True"}),
+        ("witness_interpreter_needed", {"field": "witness_needed", "value": "True"}),
+        ("witness_interpreter_language", {"field": "witness_interpreter_needed", "value": "True"})
+    ])
+
+
+class SJPPleaForm(BasePleaForm):
+    dependencies = OrderedDict([
+        ("come_to_court", {"field": "guilty", "value": "guilty"}),
+        ("sjp_interpreter_needed", {"field": "come_to_court", "value": "True"}),
+        ("sjp_interpreter_language", {"field": "sjp_interpreter_needed", "value": "True"}),
+        ("not_guilty_extra", {"field": "guilty", "value": "not_guilty"}),
+        ("interpreter_needed", {"field": "guilty", "value": "not_guilty"}),
+        ("interpreter_language", {"field": "interpreter_needed", "value": "True"}),
+        ("disagree_with_evidence", {"field": "guilty", "value": "not_guilty"}),
+        ("disagree_with_evidence_details", {"field": "disagree_with_evidence", "value": "True"}),
+        ("witness_needed", {"field": "guilty", "value": "not_guilty"}),
+        ("witness_details", {"field": "witness_needed", "value": "True"}),
+        ("witness_interpreter_needed", {"field": "witness_needed", "value": "True"}),
+        ("witness_interpreter_language", {"field": "witness_interpreter_needed", "value": "True"})
+    ])
+
+    come_to_court = forms.TypedChoiceField(widget=RadioSelect(renderer=DSRadioFieldRenderer),
+                                           required=True,
+                                           choices=YESNO_CHOICES["Hoffwn/Na hoffwn"],
+                                           coerce=to_bool,
+                                           label=_("Do you want to come to court to plead guilty?"),
+                                           error_messages={"required": ERROR_MESSAGES["COME_TO_COURT_REQUIRED"]})
+
+    sjp_interpreter_needed = forms.TypedChoiceField(widget=RadioSelect(renderer=DSRadioFieldRenderer),
+                                                    required=True,
+                                                    choices=YESNO_CHOICES["Oes/Nac oes"],
+                                                    coerce=to_bool,
+                                                    label=_("Do you need an interpreter in court?"),
+                                                    error_messages={"required": ERROR_MESSAGES["INTERPRETER_NEEDED_REQUIRED"]})
+
+    sjp_interpreter_language = forms.CharField(widget=forms.TextInput(attrs={"class": "form-control"}),
+                                               max_length=100,
+                                               required=True,
+                                               label="",
+                                               help_text=_("If yes, tell us which language (include sign language):"),
+                                               error_messages={"required": ERROR_MESSAGES["INTERPRETER_LANGUAGE_REQUIRED"]})
+
+    def __init__(self, *args, **kwargs):
+        super(SJPPleaForm, self).__init__(*args, **kwargs)
+        fields_order = ["split_form",
+                        "guilty",
+                        "come_to_court",
+                        "sjp_interpreter_needed",
+                        "sjp_interpreter_language",
+                        "guilty_extra",
+                        "not_guilty_extra",
+                        "interpreter_needed",
+                        "interpreter_language",
+                        "disagree_with_evidence",
+                        "disagree_with_evidence_details",
+                        "witness_needed",
+                        "witness_details",
+                        "witness_interpreter_needed",
+                        "witness_interpreter_language"]
+        self.fields = reorder_fields(self.fields, fields_order)
 
 
 class CourtFinderForm(forms.Form):

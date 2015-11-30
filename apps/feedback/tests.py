@@ -8,6 +8,7 @@ from django.test.client import RequestFactory
 from .models import UserRating, UserRatingAggregate
 from .views import FeedbackForms, FeedbackViews
 
+
 class FeedbackFormTestCase(TestCase):
     def setUp(self):
 
@@ -32,7 +33,6 @@ class FeedbackFormTestCase(TestCase):
             }
         }
 
-
     def get_request_mock(self, url, url_name="", url_kwargs=None):
         request_factory = RequestFactory()
 
@@ -46,16 +46,15 @@ class FeedbackFormTestCase(TestCase):
         request.META["HTTP_USER_AGENT"] = "Test User Agent"
         return request
 
-
     def test_service_stage_incomplete_data(self):
-        form = FeedbackForms("service", "feedback_form_step", self.empty_session_data)
+        form = FeedbackForms(self.empty_session_data, "service")
         form.load(self.request_context)
         form.save({}, self.request_context)
 
         self.assertEqual(len(form.current_stage.form.errors), 1)
 
     def test_service_stage_call_centre_used_incomplete_data(self):
-        form = FeedbackForms("service", "feedback_form_step", self.empty_session_data)
+        form = FeedbackForms(self.empty_session_data, "service")
         form.load(self.request_context)
 
         save_data = {
@@ -69,7 +68,7 @@ class FeedbackFormTestCase(TestCase):
         self.assertEqual(len(form.current_stage.form.errors), 2)
 
     def test_service_stage_call_centre_not_used_incomplete_data(self):
-        form = FeedbackForms("service", "feedback_form_step", self.empty_session_data)
+        form = FeedbackForms(self.empty_session_data, "service")
         form.load(self.request_context)
 
         save_data = {
@@ -82,7 +81,7 @@ class FeedbackFormTestCase(TestCase):
         self.assertEqual(response.status_code, 200)
         self.assertEqual(len(form.current_stage.form.errors), 1)
 
-    def test_comments_stage_shows_email(self):
+    def test_comments_stage_loads(self):
         session_data = {
             "service": {
                 "complete": True,
@@ -91,51 +90,33 @@ class FeedbackFormTestCase(TestCase):
             }
         }
 
-        form = FeedbackForms("comments", "feedback_form_step", session_data)
+        form = FeedbackForms(session_data, "comments")
         form.load(self.request_context)
 
         response = form.render()
-        self.assertIn("Email address", response.content)
-
-    def test_comments_stage_hides_email(self):
-        session_data = {
-            "service": {
-                "complete": True,
-                "used_call_centre": True,
-                "call_centre_satisfaction": 5,
-                "service_satisfaction": 3
-            }
-        }
-
-        form = FeedbackForms("comments", "feedback_form_step", session_data)
-        form.load(self.request_context)
-
-        with self.assertTemplateUsed("comments.html"):
-            response = form.render()
-            self.assertNotIn("Email address", response.content)
+        self.assertIn('id="id_comments"', response.content)
+        self.assertIn('id="id_email"', response.content)
 
     def test_email_is_sent(self):
-        form = FeedbackForms("comments", "feedback_form_step", self.complete_session_data)
+        form = FeedbackForms(self.complete_session_data, "comments")
         form.save({}, self.request_context)
 
         form.render()
 
         self.assertEquals(len(mail.outbox), 1)
 
-    @patch("apps.govuk_utils.stages.messages")
+    @patch("apps.forms.stages.messages")
     def test_success_message_is_added(self, messages):
-        form = FeedbackForms("comments", "feedback_form_step", self.complete_session_data)
+        form = FeedbackForms(self.complete_session_data, "comments")
         form.save({}, self.request_context)
 
         form.process_messages({})
 
         self.assertEquals(messages.add_message.call_count, 1)
 
-
     def test_redirect_is_set(self):
         fake_request = self.get_request_mock("/feedback/?next=terms")
-        fake_request.session = {}
-        fake_request.session["feedback_data"] = self.complete_session_data
+        fake_request.session = {"feedback_data": self.complete_session_data}
 
         view = FeedbackViews()
         response = view.get(fake_request, stage="complete")
@@ -143,8 +124,18 @@ class FeedbackFormTestCase(TestCase):
         self.assertEquals(response.status_code, 302)
         self.assertEquals(response.url, "/terms-and-conditions-and-privacy-policy/")
 
+    def test_redirect_is_set_to_home_if_complete_stage(self):
+        fake_request = self.get_request_mock("/feedback/?next=plea_form_step&stage=complete")
+        fake_request.session = {"feedback_data": self.complete_session_data}
+
+        view = FeedbackViews()
+        response = view.get(fake_request, stage="complete")
+
+        self.assertEquals(response.status_code, 302)
+        self.assertEquals(response.url, "/")
+
     def test_user_rating_is_recorded(self):
-        form = FeedbackForms("comments", "feedback_form_step", self.complete_session_data)
+        form = FeedbackForms(self.complete_session_data, "comments")
         form.save({}, self.request_context)
 
         self.assertEquals(UserRating.objects.all().count(), 1)

@@ -32,11 +32,12 @@ class CaseCreationTests(TestCase):
             test_mode=False)
 
         self.context_data = {
-            'case': {u'urn': u'06/aa/0000000/00',
-                      u'date_of_hearing': datetime.date(2015, 1, 1),
-                      u'time_of_hearing': datetime.time(9, 15),
-                      u'number_of_charges': 2,
-                      u'plea_made_by': "Defendant"},
+            'notice_type': {u'sjp': False},
+            'case': {u'urn': u'06AA000000000',
+                     u'date_of_hearing': datetime.date(2015, 1, 1),
+                     u'contact_deadline': datetime.date(2015, 1, 1),
+                     u'number_of_charges': 2,
+                     u'plea_made_by': "Defendant"},
             'your_details': {
                 u'first_name': u'maverick',
                 u'last_name': u'cobain',
@@ -48,11 +49,10 @@ class CaseCreationTests(TestCase):
                        u'receive_email_updates': u'True',
                        u'email': u'test@test.com'},
             'send_error': {},
-            'plea': {u'PleaForms': [{u'guilty_extra': u'fdsfdsff\r\nds\r\nf',
-                                     u'guilty': u'guilty'},
-                                    {u'not_guilty_extra': u'fdsfd\r\nsf\r\n\r\n',
-                                     u'guilty': u'not_guilty'}], u'understand': True}}
-
+            'plea': {u'data': [{u'guilty_extra': u'fdsfdsff\r\nds\r\nf',
+                                 u'guilty': u'guilty'},
+                                {u'not_guilty_extra': u'fdsfd\r\nsf\r\n\r\n',
+                                 u'guilty': u'not_guilty'}], u'understand': True}}
 
     @override_settings(STORE_USER_DATA=True)
     def test_user_data_is_persisted(self):
@@ -95,7 +95,7 @@ class CaseCreationTests(TestCase):
         self.assertEquals(self.context_data['case']['urn'], data['case']['urn'])
 
     @override_settings(STORE_USER_DATA=True)
-    @patch("apps.govuk_utils.email.TemplateAttachmentEmail.send")
+    @patch("apps.plea.attachment.TemplateAttachmentEmail.send")
     def test_email_failure_audit(self, send):
         send.side_effect = socket.error("Email failed to send, socket error")
 
@@ -163,8 +163,7 @@ class CaseCreationTests(TestCase):
     def test_user_email_not_requested(self, send):
         send.side_effect = iter([socket.error("Email failed to send, socket error"), True])
 
-        case = Case.objects.create(
-            urn="00/AA/00000/00")
+        case = Case.objects.create(urn="00AA0000000")
 
         self.context_data.update({u"review": {"receive_email_updates": False,
                                               "email": ""}})

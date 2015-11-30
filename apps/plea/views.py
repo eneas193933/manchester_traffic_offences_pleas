@@ -3,20 +3,23 @@ from django.conf import settings
 from django.core.urlresolvers import reverse_lazy
 from django.http import HttpResponseRedirect
 from django.shortcuts import RequestContext, redirect
-from django.views.decorators.cache import never_cache
-from django.views.generic import TemplateView, FormView
+from django.views.generic import FormView
 
 from brake.decorators import ratelimit
 
-from apps.govuk_utils.stages import MultiStageForm
+from apps.forms.stages import MultiStageForm
+from apps.forms.views import StorageView
 
 from .models import Case, Court
 from .forms import CourtFinderForm
-from .stages import (CaseStage,
+from .stages import (URNEntryStage,
+                     NoticeTypeStage,
+                     CaseStage,
                      YourDetailsStage,
                      CompanyDetailsStage,
                      PleaStage,
-                     YourMoneyStage,
+                     YourStatusStage,
+                     YourFinancesStage,
                      HardshipStage,
                      HouseholdExpensesStage,
                      OtherExpensesStage,
@@ -27,11 +30,15 @@ from .fields import ERROR_MESSAGES
 
 
 class PleaOnlineForms(MultiStageForm):
-    stage_classes = [CaseStage,
+    url_name = "plea_form_step"
+    stage_classes = [URNEntryStage,
+                     NoticeTypeStage,
+                     CaseStage,
                      YourDetailsStage,
                      CompanyDetailsStage,
                      PleaStage,
-                     YourMoneyStage,
+                     YourStatusStage,
+                     YourFinancesStage,
                      HardshipStage,
                      HouseholdExpensesStage,
                      OtherExpensesStage,
@@ -39,9 +46,8 @@ class PleaOnlineForms(MultiStageForm):
                      ReviewStage,
                      CompleteStage]
 
-    def __init__(self, *args):
-
-        super(PleaOnlineForms, self).__init__(*args)
+    def __init__(self, *args, **kwargs):
+        super(PleaOnlineForms, self).__init__(*args, **kwargs)
 
         self._urn_invalid = False
 
@@ -68,49 +74,56 @@ class PleaOnlineForms(MultiStageForm):
         return super(PleaOnlineForms, self).render()
 
 
-class PleaOnlineViews(TemplateView):
+class PleaOnlineViews(StorageView):
+    start = "enter_urn"
 
-    @method_decorator(never_cache)
-    def dispatch(self, *args, **kwargs):
-        return super(PleaOnlineViews, self).dispatch(*args, **kwargs)
+    def __init__(self, *args, **kwargs):
+        super(PleaOnlineViews, self).__init__(*args, **kwargs)
+        self.index = None
+        self.storage = None
 
-    def _get_storage(self, request):
-        if not request.session.get("plea_data"):
-            request.session["plea_data"] = {}
+    def dispatch(self, request, *args, **kwargs):
+        # If the session has timed out, redirect to start page
+        if not request.session.get("plea_data") and kwargs.get("stage", self.start) != self.start:
+            # messages.add_message(request, messages.ERROR, _("Your session has timed out"), extra_tags="session_timeout")
+            return HttpResponseRedirect("/")
 
-        return request.session["plea_data"]
+        # Store the index if we've got one
+        idx = kwargs.pop("index", None)
+        try:
+            self.index = int(idx)
+        except (ValueError, TypeError):
+            self.index = 0
 
-    def _clear_storage(self, request):
-        if "plea_data" in request.session:
-            del request.session["plea_data"]
+        # Load storage
+        self.storage = self.get_storage(request, "plea_data")
+
+        return super(PleaOnlineViews, self).dispatch(request, *args, **kwargs)
 
     def get(self, request, stage=None):
-        storage = self._get_storage(request)
-
         if not stage:
             stage = PleaOnlineForms.stage_classes[0].name
             return HttpResponseRedirect(reverse_lazy("plea_form_step", args=(stage,)))
 
-        form = PleaOnlineForms(stage, "plea_form_step", storage)
-        redirect = form.load(RequestContext(request))
-        if redirect:
-            return redirect
+        form = PleaOnlineForms(self.storage, stage, self.index)
+        case_redirect = form.load(RequestContext(request))
+        if case_redirect:
+            return case_redirect
 
         form.process_messages(request)
 
         if stage == "complete":
-            self._clear_storage(request)
+            self.clear_storage(request, "plea_data")
 
         return form.render()
 
     @method_decorator(ratelimit(block=True, rate=settings.RATE_LIMIT))
     def post(self, request, stage):
-        storage = self._get_storage(request)
-
         nxt = request.GET.get("next", None)
 
-        form = PleaOnlineForms(stage, "plea_form_step", storage)
+        form = PleaOnlineForms(self.storage, stage, self.index)
         form.save(request.POST, RequestContext(request), nxt)
+
         if not form._urn_invalid:
             form.process_messages(request)
 
@@ -118,7 +131,7 @@ class PleaOnlineViews(TemplateView):
         return form.render()
 
 
-class UrnAlreadyUsedView(TemplateView):
+class UrnAlreadyUsedView(StorageView):
     template_name = "urn_used.html"
 
     def post(self, request):

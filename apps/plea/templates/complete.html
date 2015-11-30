@@ -3,16 +3,18 @@
 {% load i18n %}
 {% load date %}
 {% load testing %}
+{% load urn %}
 
 {% block page_title %}{% blocktrans count charges=case.number_of_charges %}Your plea has been sent to the court{% plural %}Your pleas have been sent to the court{% endblocktrans %} - {{ block.super }}{% endblock %}
 
 {% block page_content %}
 
+    {% add_test_tag "<<MAP>>" %}
     {% if plea_type == "guilty" %}{% add_test_tag "<<GUILTY>>" %}{% endif %}
     {% if plea_type == "not_guilty" %}{% add_test_tag "<<NOTGUILTY>>" %}{% endif %}
     {% if plea_type == "mixed" %}{% add_test_tag "<<MIXED>>" %}{% endif %}
 
-    <header class="success-header">
+    <header class="success-header" role="alert">
         <h1 class="ticked">{% spaceless %}
             {% if case.plea_made_by == "Defendant" %}
                 {% blocktrans count charges=case.number_of_charges %}Your plea has been sent to the court{% plural %}Your pleas have been sent to the court{% endblocktrans %}
@@ -27,26 +29,30 @@
         <h2 class="heading-medium">{% blocktrans %}What happens next:{% endblocktrans %}</h2>
         <div class="panel-indent">
             <ul>
-            {% if plea_type == "guilty" or plea_type == "mixed" %}
-                {% if case.plea_made_by == "Defendant" %}
+            {% if case.plea_made_by == "Defendant" %}
+
+                {% if plea_type == "guilty" or plea_type == "mixed" %}
                     <li>{% blocktrans count charges=case.number_of_charges %}we'll send you a letter with the court's decision within 3 working days after your hearing date{% plural %}we'll send you a letter with the court's decisions within 3 working days after your hearing date{% endblocktrans %}</li>
                     <li>{% blocktrans %}we'll tell you if you need to attend a trial and what evidence you may need to send to the court to support your case{% endblocktrans %}</li>
                 {% endif %}
 
-                {% if case.plea_made_by == "Company representative" %}
-                    <li>{% blocktrans count charges=case.number_of_charges %}we'll send a letter with the court's decision within 3 working days after the hearing date{% plural %}we'll send a letter with the court's decisions within 3 working days after the hearing date{% endblocktrans %}</li>
-                    <li>{% blocktrans %}we'll tell you if a company representative needs to attend a trial and what evidence you may need to send to the court to support the case{% endblocktrans %}</li>
-                {% endif %}
-            {% endif %}
-
-            {% if plea_type == "not_guilty" %}
-                {% if case.plea_made_by == "Defendant" %}
+                {% if plea_type == "not_guilty" %}
                     <li>{% blocktrans %}we'll send you a letter with a new hearing date for you to come to court for a trial{% endblocktrans %}</li>
                 {% endif %}
 
-                {% if case.plea_made_by == "Company representative" %}
+            {% endif %}
+
+            {% if case.plea_made_by == "Company representative" %}
+
+                {% if plea_type == "guilty" or plea_type == "mixed" %}
+                    <li>{% blocktrans count charges=case.number_of_charges %}we'll send a letter with the court's decision within 3 working days after the hearing date{% plural %}we'll send a letter with the court's decisions within 3 working days after the hearing date{% endblocktrans %}</li>
+                    <li>{% blocktrans %}we'll tell you if a company representative needs to attend a trial and what evidence you may need to send to the court to support the case{% endblocktrans %}</li>
+                {% endif %}
+
+                {% if plea_type == "not_guilty" %}
                     <li>{% blocktrans %}we'll send you a letter with a new hearing date for a company representative to come to court{% endblocktrans %}</li>
                 {% endif %}
+
             {% endif %}
 
                 <li>{% blocktrans %}you can <a href="javascript:window.print();">print a copy</a> of this plea confirmation for your records{% endblocktrans %}</li>
@@ -67,7 +73,7 @@
 
         <h2 class="heading-medium">{% blocktrans %}Need to change a plea?{% endblocktrans %}</h2>
 
-        <p>{% blocktrans with urn=case.urn|upper hearing_date=case.date_of_hearing|parse_date|date:"d/m/Y" %}Contact the court by post or email quoting your URN {{ urn }} to arrive before {{ hearing_date }}.{% endblocktrans %}</p>
+        <p>{% blocktrans with urn=case.urn|format_urn hearing_date=case.contact_deadline|parse_date|date:"d/m/Y" %}Contact the court by post or email quoting your URN {{ urn }} to arrive before {{ hearing_date }}.{% endblocktrans %}</p>
 
         <p>{% blocktrans %}The contact details for the court are:{% endblocktrans %}</p>
 
@@ -86,16 +92,14 @@
 
 {% endblock page_content %}
 
-{% block body_end %}
-    {{ block.super }}
+{% block extra_analytics %}
+    {% spaceless %}
 
     {% if analytics_events and google_analytics_id %}
-<script>
-{% for event in analytics_events %}
+        {% for event in analytics_events %}
 ga('send', 'event', 'Complete submission', '{{ event.action }}', '{{ event.label }}');
-{% endfor %}
-
-ga('set', 'dimension1', '{{ LANGUAGE_CODE }}');
-</script>
+        {% endfor %}
     {% endif %}
-{% endblock body_end %}
+
+    {% endspaceless %}
+{% endblock extra_analytics %}

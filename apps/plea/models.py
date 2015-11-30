@@ -2,9 +2,10 @@ from collections import Counter
 from dateutil.parser import parse as date_parse
 import datetime as dt
 
+from django.core.exceptions import ImproperlyConfigured
 from django.db import models
 from django.db.models import Sum, Count, F
-from django.core.exceptions import ImproperlyConfigured
+from django.utils.translation import get_language
 
 
 STATUS_CHOICES = (("created_not_sent", "Created but not sent"),
@@ -14,63 +15,72 @@ STATUS_CHOICES = (("created_not_sent", "Created but not sent"),
                   ("receipt_failure", "Processing failed"))
 
 
+COURT_LANGUAGE_CHOICES = (("en", "English"),
+                          ("cy", "Welsh"))
+
+
+INITIATION_TYPE_CHOICES = (("C", "Charge"),
+                           ("J", "SJP"),
+                           ("Q", "Requisition"),
+                           ("O", "Other"),
+                           ("R", "Remitted"),
+                           ("S", "Summons"))
+
+NOTICE_TYPES_CHOICES = (("both", "Both"),
+                        ("sjp", "SJP"),
+                        ("non-sjp", "Non-SJP"))
+
+
+def get_totals(qs):
+    totals = qs.aggregate(Sum('total_pleas'),
+                          Sum('total_guilty'),
+                          Sum('total_not_guilty'))
+
+    return {
+        'submissions': qs.count(),
+        'pleas': totals['total_pleas__sum'] or 0,
+        'guilty': totals['total_guilty__sum'] or 0,
+        'not_guilty': totals['total_not_guilty__sum'] or 0
+    }
+
+
 class CourtEmailCountManager(models.Manager):
     def calculate_aggregates(self, start_date, court=None, days=7):
         """
-        Calculate aggregate stats (subs, guilty pleas, not guilty pleas) over the
-        specified date period.
+        Calculate aggregate stats (submissions, total pleas,
+        guilty pleas, not guilty pleas) over the specified date period.
         """
-        start_datetime = dt.datetime.combine(
-            start_date, dt.datetime.min.time())
+        start_datetime = start_date
 
-        end_datetime = dt.datetime.combine(
-            start_date+dt.timedelta(days), dt.datetime.max.time())
+        end_datetime = start_date + dt.timedelta(days)
 
-        filter = dict(hearing_date__gte=start_datetime,
-                      hearing_date__lte=end_datetime)
+        filter = dict(sent=True,
+                      court__test_mode=False,
+                      date_sent__gte=start_datetime,
+                      date_sent__lt=end_datetime)
 
         if court:
             filter["court"] = court
 
         qs = self.filter(**filter)
 
-        totals = qs.aggregate(Sum('total_pleas'),
-                              Sum('total_guilty'),
-                              Sum('total_not_guilty'))
+        totals = get_totals(qs)
 
-        return {
-            'submissions': qs.count(),
-            'pleas': totals['total_pleas__sum'] or 0,
-            'guilty': totals['total_guilty__sum'] or 0,
-            'not_guilty': totals['total_not_guilty__sum'] or 0
-        }
+        return totals
 
-    def get_stats(self):
+    def get_stats(self, start=None, end=None):
         """
-        Return some basic stats
+        Return stats, which can be filtered by start date or end date
         """
+        qs = self.filter(sent=True, court__test_mode=False)
 
-        def _get_totals(qs):
-            totals = qs.aggregate(Sum('total_pleas'), Sum('total_guilty'), Sum('total_not_guilty'))
+        if start:
+            qs = qs.filter(date_sent__gte=start)
 
-            return {
-                'total': totals['total_pleas__sum'] or 0,
-                'guilty': totals['total_guilty__sum'] or 0,
-                'not_guilty': totals['total_not_guilty__sum'] or 0
-            }
+        if end:
+            qs = qs.filter(date_sent__lte=end)
 
-        stats = {
-            'submissions': {},
-            'pleas': {}
-        }
-
-        to_date = self.filter(sent=True, court__test_mode=False)
-
-        stats['submissions']['to_date'] = to_date.count()
-
-        stats['pleas']['to_date'] = _get_totals(to_date)
-
-        return stats
+        return get_totals(qs)
 
     def get_stats_by_hearing_date(self, days=None, start_date=None):
         """
@@ -111,14 +121,10 @@ class CourtEmailCountManager(models.Manager):
             qs = self.filter(sent=True,
                              court__id=court.id)
 
-            totals = qs.aggregate(Sum('total_pleas'), Sum('total_guilty'), Sum('total_not_guilty'))
-
             data = {"court_name": court.court_name,
-                    "region_code": court.region_code,
-                    "submissions": qs.count(),
-                    "pleas": totals['total_pleas__sum'],
-                    "guilty": totals['total_guilty__sum'],
-                    "not_guilty": totals['total_not_guilty__sum']}
+                    "region_code": court.region_code}
+
+            data.update(get_totals(qs))
 
             stats.append(data)
 
@@ -136,9 +142,14 @@ class CourtEmailCountManager(models.Manager):
 
         return day_counts
 
+
 class CourtEmailCount(models.Model):
     date_sent = models.DateTimeField(auto_now_add=True)
-    court = models.ForeignKey("Court")
+    court = models.ForeignKey("Court", related_name="court_email_counts")
+    initiation_type = models.CharField(max_length=2, null=False, blank=False, default="C",
+                                       choices=INITIATION_TYPE_CHOICES)
+    language = models.CharField(max_length=2, null=False, blank=False, default="en",
+                                choices=COURT_LANGUAGE_CHOICES)
 
     total_pleas = models.IntegerField()
     total_guilty = models.IntegerField()
@@ -161,7 +172,7 @@ class CourtEmailCount(models.Model):
     def get_from_context(self, context, court):
         if "plea" not in context:
             return
-        if "PleaForms" not in context["plea"]:
+        if "data" not in context["plea"]:
             return
         if "your_details" not in context:
             return
@@ -180,16 +191,19 @@ class CourtEmailCount(models.Model):
         self.court = court
 
         try:
-            if isinstance(context["case"]["date_of_hearing"], dt.date):
-                date_part = context["case"]["date_of_hearing"]
+            if isinstance(context["case"]["contact_deadline"], dt.date):
+                date_part = context["case"]["contact_deadline"]
             else:
-                date_part = date_parse(context["case"]["date_of_hearing"])
+                date_part = date_parse(context["case"]["contact_deadline"])
 
             self.hearing_date = date_part
         except KeyError:
             return False
 
-        for plea_data in context["plea"]["PleaForms"]:
+        self.initiation_type = "J" if context["notice_type"]["sjp"] else "C"
+        self.language = get_language().split("-")[0]
+
+        for plea_data in context["plea"]["data"]:
             self.total_pleas += 1
 
             if plea_data["guilty"] == "guilty":
@@ -201,7 +215,7 @@ class CourtEmailCount(models.Model):
         # extra anon information
         self.sc_guilty_char_count, self.sc_not_guilty_char_count = 0, 0
 
-        for plea in context["plea"]["PleaForms"]:
+        for plea in context["plea"]["data"]:
             if plea["guilty"] == "guilty":
                 self.sc_guilty_char_count += len(plea.get("guilty_extra", ""))
             else:
@@ -228,7 +242,7 @@ class Case(models.Model):
     transferred to an encrypted S3 account.
     """
 
-    urn = models.CharField(max_length=16, db_index=True)
+    urn = models.CharField(max_length=30, db_index=True)
 
     title = models.CharField(max_length=35, null=True, blank=True)
     name = models.CharField(max_length=255, null=True, blank=True)
@@ -242,6 +256,10 @@ class Case(models.Model):
                                    help_text="as supplied by DX")
 
     ou_code = models.CharField(max_length=10, null=True, blank=True)
+    initiation_type = models.CharField(max_length=2, null=False, blank=False, default="C",
+                                       choices=INITIATION_TYPE_CHOICES)
+    language = models.CharField(max_length=2, null=False, blank=False, default="en",
+                                choices=COURT_LANGUAGE_CHOICES)
 
     sent = models.BooleanField(null=False, default=False)
     processed = models.BooleanField(null=False, default=False)
@@ -273,7 +291,9 @@ class Offence(models.Model):
 
     offence_code = models.CharField(max_length=10, null=True, blank=True)
     offence_short_title = models.CharField(max_length=120)
+    offence_short_title_welsh = models.CharField(max_length=120, null=True, blank=True)
     offence_wording = models.TextField(max_length=4000)
+    offence_wording_welsh = models.TextField(max_length=4000, null=True, blank=True)
     offence_seq_number = models.CharField(max_length=10, null=True, blank=True)
 
 
@@ -422,6 +442,9 @@ class Court(models.Model):
         max_length=255,
         help_text="A user facing email address")
 
+    court_language = models.CharField(max_length=4, null=False, blank=False, default="en",
+                                      choices=COURT_LANGUAGE_CHOICES)
+
     submission_email = models.CharField(
         max_length=255,
         help_text="The outbound court email used to send submission data")
@@ -447,6 +470,11 @@ class Court(models.Model):
         default=False,
         help_text="Is this court entry used for testing purposes?")
 
+    notice_types = models.CharField(
+        max_length=7, null=False, blank=False, default="both",
+        choices=NOTICE_TYPES_CHOICES,
+        help_text="What kind of notices are being sent out by this area?")
+
     validate_urn = models.BooleanField(
         default=False,
         help_text="Do we have a full set of incoming DX data?"
@@ -469,3 +497,15 @@ class Court(models.Model):
         )
 
     objects = CourtManager()
+
+
+class DataValidation(models.Model):
+    date_entered = models.DateTimeField(auto_now_add=True)
+    urn_entered = models.CharField(max_length=50, null=False, blank=False)
+    urn_standardised = models.CharField(max_length=50, null=False, blank=False)
+    urn_formatted = models.CharField(max_length=50, null=False, blank=False)
+    case_match = models.ForeignKey("plea.Case", null=True, blank=True)
+    case_match_count = models.PositiveIntegerField(default=0)
+
+    class Meta:
+        ordering = ["-date_entered"]

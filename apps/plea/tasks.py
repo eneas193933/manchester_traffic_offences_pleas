@@ -9,17 +9,30 @@ from django.core.mail import get_connection
 from django.conf import settings
 from django.utils import translation
 
-from apps.govuk_utils.email import TemplateAttachmentEmail
+from apps.plea.attachment import TemplateAttachmentEmail
 
-from manchester_traffic_offences.celery import app
+from make_a_plea.celery import app
 from apps.plea.models import Case, CourtEmailCount, Court
+from apps.plea.standardisers import format_for_region
 
 logger = logging.getLogger(__name__)
 
 
-@app.task(bind=True, max_retries=5)
+def get_email_subject(email_data):
+    if email_data["notice_type"]["sjp"] is True:
+        subject = "ONLINE PLEA: {case[formatted_urn]} <SJP> {email_name}"
+    else:
+        subject = "ONLINE PLEA: {case[formatted_urn]} DOH: {email_date_of_hearing} {email_name}"
+
+    email_data["case"]["formatted_urn"] = format_for_region(email_data["case"]["urn"])
+    return subject.format(**email_data)
+
+
+@app.task(bind=True, max_retries=10, default_retry_delay=900)
 def email_send_court(self, case_id, count_id, email_data):
     smtp_route = "GSI"
+
+    email_data["urn"] = format_for_region(email_data["case"]["urn"])
 
     # No error trapping, let these fail hard if the objects can't be found
     case = Case.objects.get(pk=case_id)
@@ -39,6 +52,7 @@ def email_send_court(self, case_id, count_id, email_data):
 
     case.add_action("Court email started", "")
 
+    email_subject = get_email_subject(email_data)
     email_body = "<<<makeaplea-ref: {}/{}>>>".format(case.id, count_id)
 
     plea_email = TemplateAttachmentEmail(settings.PLEA_EMAIL_FROM,
@@ -50,7 +64,7 @@ def email_send_court(self, case_id, count_id, email_data):
     try:
         with translation.override("en"):
             plea_email.send(plea_email_to,
-                            settings.PLEA_EMAIL_SUBJECT.format(**email_data),
+                            email_subject,
                             email_body,
                             route=smtp_route)
     except (smtplib.SMTPException, socket.error, socket.gaierror) as exc:
@@ -65,19 +79,22 @@ def email_send_court(self, case_id, count_id, email_data):
         raise self.retry(args=[case_id, count_id, email_data], exc=exc)
 
     case.add_action("Court email sent", "Sent mail to {0} via {1}".format(plea_email_to, smtp_route))
-    case.sent = True
-    case.save()
 
     if not court_obj.test_mode:
+        case.sent = True
+        case.save()
+
         email_count.get_status_from_case(case)
         email_count.save()
 
     return True
 
 
-@app.task(bind=True, max_retries=5)
+@app.task(bind=True, max_retries=10, default_retry_delay=1800)
 def email_send_prosecutor(self, case_id, email_data):
     smtp_route = "PNN"
+
+    email_data["urn"] = format_for_region(email_data["case"]["urn"])
 
     try:
         court_obj = Court.objects.get_by_urn(email_data["case"]["urn"])
@@ -90,6 +107,9 @@ def email_send_prosecutor(self, case_id, email_data):
     case = Case.objects.get(pk=case_id)
     case.add_action("Prosecutor email started", "")
 
+    email_subject = "POLICE " + get_email_subject(email_data)
+    email_body = ""
+
     plp_email = TemplateAttachmentEmail(settings.PLP_EMAIL_FROM,
                                         settings.PLEA_EMAIL_ATTACHMENT_NAME,
                                         "emails/attachments/plp_email.html",
@@ -100,8 +120,8 @@ def email_send_prosecutor(self, case_id, email_data):
         try:
             with translation.override("en"):
                 plp_email.send([court_obj.plp_email],
-                               settings.PLP_EMAIL_SUBJECT.format(**email_data),
-                               settings.PLEA_EMAIL_BODY,
+                               email_subject,
+                               email_body,
                                route=smtp_route)
         except (smtplib.SMTPException, socket.error, socket.gaierror) as exc:
             logger.warning("Error sending email to prosecutor: {0}".format(exc))
@@ -116,7 +136,7 @@ def email_send_prosecutor(self, case_id, email_data):
     return True
 
 
-@app.task(bind=True, max_retries=5)
+@app.task(bind=True, max_retries=10, default_retry_delay=1800)
 def email_send_user(self, case_id, email_address, subject, html_body, txt_body):
     """
     Dispatch an email to the user to confirm that their plea submission

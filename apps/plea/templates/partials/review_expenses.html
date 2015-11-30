@@ -4,26 +4,57 @@
 
 {% add_test_tag "<<SHOWINGEXPENSES>>" %}
 
+<section class="review-subsection">
+    <header>
+        <h3>{% blocktrans %}Information for the magistrate{% endblocktrans %}</h3>
 
-    <tbody>
-        <tr>
-            <th>{% blocktrans %}Financial hardship details{% endblocktrans %}</th>
-            <td>{{ hardship.hardship_details|linebreaksbr }}</td>
-        </tr>
-        <tr>
-            <th>{% blocktrans %}Other contributors to household bills{% endblocktrans %}</th>
-            <td>{{ household_expenses.other_bill_payers|yesno:_("Yes,No (v3)") }}</td>
-        </tr>
-        <tr>
-            <th>{% blocktrans %}Total household expenses{% endblocktrans %}</th>
-            <td>£{{ your_expenses.total_household_expenses|floatformat:2|intcomma }}</td>
-        </tr>
-        <tr>
-            <th>{% blocktrans %}Total other expenses{% endblocktrans %}</th>
-            <td>£{{ your_expenses.total_other_expenses|floatformat:2|intcomma }}</td>
-        </tr>
-        <tr>
-            <th>{% blocktrans %}Total expenses{% endblocktrans %}</th>
-            <td>£{{ your_expenses.total_expenses|floatformat:2|intcomma }}</td>
-        </tr>
-    </tbody>
+        {% if show_edit_link %}
+        <a class="change-link" href="{% url "plea_form_step" "hardship" %}">{% blocktrans %}Change magistrate information{% endblocktrans %}</a>
+        {% endif %}
+    </header>
+
+    <dl>
+        <dt>{% blocktrans %}Paying a fine would cause me financial problems because{% endblocktrans %}</dt>
+        <dd>{{ hardship.hardship_details|linebreaksbr }}</dd>
+    </dl>
+</section>
+
+<section class="review-subsection">
+    <header>
+        <h3>{% blocktrans %}Household expenses{% endblocktrans %}</h3>
+
+        {% if show_edit_link %}
+        <a class="change-link" href="{% url "plea_form_step" "household_expenses" %}">{% blocktrans %}Change your household expenses{% endblocktrans %}</a>
+        {% endif %}
+    </header>
+
+    <dl>
+        <dt>{% blocktrans %}Other contributors to household bills{% endblocktrans %}</dt>
+        <dd>{{ household_expenses.other_bill_payers|yesno:_("Yes,No (v3)") }}</dd>
+
+        <dt>{% blocktrans %}Total household expenses{% endblocktrans %}</dt>
+        <dd>£{{ your_expenses.total_household_expenses|floatformat:2|intcomma }}</dd>
+    </dl>
+</section>
+
+<section class="review-subsection">
+    <header>
+        <h3>{% blocktrans %}Other expenses{% endblocktrans %}</h3>
+
+        {% if show_edit_link %}
+        <a class="change-link" href="{% url "plea_form_step" "other_expenses" %}">{% blocktrans %}Change your other expenses{% endblocktrans %}</a>
+        {% endif %}
+    </header>
+
+    <dl>
+        <dt>{% blocktrans %}Total other expenses{% endblocktrans %}</dt>
+        <dd>£{{ your_expenses.total_other_expenses|floatformat:2|intcomma }}</dd>
+    </dl>
+</section>
+
+<section class="review-subsection">
+    <dl>
+        <dt class="bold-small">Total expenses</dt>
+        <dd>£{{ your_expenses.total_expenses|floatformat:2|intcomma }}</dd>
+    </dl>
+</section>
