@@ -2,7 +2,7 @@
 
 {% load i18n %}
 {% load form_widgets %}
-{% load testing %}
+{% load widget_tweaks %}
 
 {% block page_title %}{% blocktrans %}Information for the magistrate{% endblocktrans %} - {{ block.super }}{% endblock %}
 
@@ -14,6 +14,6 @@
 
 {% block stage_form %}
 
-    {% std_field form.hardship_details wide=True %}
+    {% std_field form.hardship_details|attr:"rows:5" wide=True %}
 
 {% endblock stage_form %}

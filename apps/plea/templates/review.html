@@ -2,6 +2,7 @@
 
 {% load i18n %}
 {% load form_widgets %}
+{% load widget_tweaks %}
 
 {% spaceless %}
 {% block page_title %}
@@ -106,7 +107,7 @@
         {% radio_field form.receive_email_updates inline=True %}
 
         <div class="panel-indent move-up" data-conditional="receive_email_updates" data-conditional-value="True">
-            {% std_field form.email hide_optional=True wide=True %}
+            {% std_field form.email|attr:"type:email" hide_optional=True wide=True %}
         </div>
 
     </section>

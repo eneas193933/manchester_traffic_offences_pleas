@@ -35,7 +35,7 @@ def reorder_fields(fields, order):
 
 
 class URNEntryForm(BaseStageForm):
-    urn = forms.CharField(widget=forms.TextInput(attrs={"class": "form-control"}),
+    urn = forms.CharField(widget=forms.TextInput,
                           label=_("What is your Unique Reference Number (URN)?"),
                           required=True,
                           validators=[is_urn_valid, is_urn_not_used],
@@ -63,10 +63,7 @@ class BaseCaseForm(BaseStageForm):
         ("Company representative", _("Pleading on behalf of a company")))
 
     number_of_charges = forms.IntegerField(label=_("Number of charges"),
-                                           widget=forms.TextInput(attrs={"pattern": "[0-9]*",
-                                                                         "maxlength": "2",
-                                                                         "class": "form-control-inline",
-                                                                         "size": "2"}),
+                                           widget=forms.TextInput,
                                            help_text=_("On the charge sheet, in numbered boxes."),
                                            min_value=1, max_value=10,
                                            error_messages={"required": ERROR_MESSAGES["NUMBER_OF_CHARGES_REQUIRED"]})
@@ -128,13 +125,13 @@ class YourDetailsForm(BaseStageForm):
         }
     }
 
-    first_name = forms.CharField(widget=forms.TextInput(attrs={"class": "form-control"}),
+    first_name = forms.CharField(widget=forms.TextInput,
                                  max_length=100,
                                  required=True,
                                  label=_("First name"),
                                  error_messages={"required": ERROR_MESSAGES["FIRST_NAME_REQUIRED"]})
 
-    last_name = forms.CharField(widget=forms.TextInput(attrs={"class": "form-control"}),
+    last_name = forms.CharField(widget=forms.TextInput,
                                 max_length=100,
                                 required=True,
                                 label=_("Last name"),
@@ -147,13 +144,13 @@ class YourDetailsForm(BaseStageForm):
                                              label=_("Is your address correct on page 1 of the notice we sent to you?"),
                                              error_messages={"required": ERROR_MESSAGES["CORRECT_ADDRESS_REQUIRED"]})
 
-    updated_address = forms.CharField(widget=forms.Textarea(attrs={"rows": "4", "class": "form-control"}),
+    updated_address = forms.CharField(widget=forms.Textarea,
                                       required=False,
                                       label="",
                                       help_text=_("If no, tell us your correct address here:"),
                                       error_messages={"required": ERROR_MESSAGES["UPDATED_ADDRESS_REQUIRED"]})
 
-    contact_number = forms.CharField(widget=forms.TextInput(attrs={"type": "tel", "class": "form-control"}),
+    contact_number = forms.CharField(widget=forms.TextInput,
                                      required=True,
                                      max_length=30,
                                      label=_("Contact number"),
@@ -176,7 +173,7 @@ class YourDetailsForm(BaseStageForm):
                                             label=_("Do you have a National Insurance number?"),
                                             error_messages={"required": ERROR_MESSAGES["HAVE_NI_NUMBER_REQUIRED"]})
 
-    ni_number = forms.CharField(widget=forms.TextInput(attrs={"class": "form-control"}),
+    ni_number = forms.CharField(widget=forms.TextInput,
                                 required=True,
                                 label="",
                                 help_text=_("If yes, enter it here. It can be found on your National Insurance card, benefit letter, payslip or P60 - for example, 'QQ 12 34 56 C'"),
@@ -190,7 +187,7 @@ class YourDetailsForm(BaseStageForm):
                                                          help_text=_("Entering your UK driving licence number means you don't have to send your licence to the court."),
                                                          error_messages={"required": ERROR_MESSAGES["HAVE_DRIVING_LICENCE_NUMBER_REQUIRED"]})
 
-    driving_licence_number = forms.CharField(widget=forms.TextInput(attrs={"class": "form-control"}),
+    driving_licence_number = forms.CharField(widget=forms.TextInput,
                                              required=True,
                                              label="",
                                              help_text=_("If yes, enter it here. Your driving licence number is in section 5 of your driving licence photocard."),
@@ -211,7 +208,7 @@ class CompanyDetailsForm(BaseStageForm):
         ("Company solicitor", _("company solicitor")))
 
     company_name = forms.CharField(label=_("Company name"),
-                                   widget=forms.TextInput(attrs={"class": "form-control"}),
+                                   widget=forms.TextInput,
                                    max_length=100,
                                    required=True,
                                    help_text=_("As written on page 1 of the notice we sent you."),
@@ -224,19 +221,19 @@ class CompanyDetailsForm(BaseStageForm):
                                              label=_("Is the company's address correct on page 1 of the notice we sent to you?"),
                                              error_messages={"required": ERROR_MESSAGES["COMPANY_CORRECT_ADDRESS_REQUIRED"]})
 
-    updated_address = forms.CharField(widget=forms.Textarea(attrs={"rows": "4", "class": "form-control"}),
+    updated_address = forms.CharField(widget=forms.Textarea,
                                       label="",
                                       required=False,
                                       help_text=_("If no, tell us the correct company address here:"),
                                       error_messages={"required": ERROR_MESSAGES["COMPANY_UPDATED_ADDRESS_REQUIRED"]})
 
     first_name = forms.CharField(label=_("Your first name"),
-                                 widget=forms.TextInput(attrs={"class": "form-control"}),
+                                 widget=forms.TextInput,
                                  required=True,
                                  error_messages={"required": ERROR_MESSAGES["FIRST_NAME_REQUIRED"]})
 
     last_name = forms.CharField(label=_("Your last name"),
-                                 widget=forms.TextInput(attrs={"class": "form-control"}),
+                                 widget=forms.TextInput,
                                  required=True,
                                  error_messages={"required": ERROR_MESSAGES["LAST_NAME_REQUIRED"]})
 
@@ -247,8 +244,7 @@ class CompanyDetailsForm(BaseStageForm):
                                             error_messages={"required": ERROR_MESSAGES["POSITION_REQUIRED"]})
 
     contact_number = forms.CharField(label=_("Contact number"),
-                                     widget=forms.TextInput(attrs={"type": "tel",
-                                                                   "class": "form-control"}),
+                                     widget=forms.TextInput,
                                      max_length=30,
                                      required=True,
                                      help_text=_("Office or mobile number."),
@@ -274,8 +270,7 @@ class YourFinancesEmployedForm(BaseStageForm):
 
     employed_pay_amount = forms.DecimalField(label=_("What's your take home pay (after tax)?"),
                                                        localize=True,
-                                                       widget=forms.TextInput(attrs={"pattern": "[0-9]*",
-                                                                                     "class": "form-control-inline"}),
+                                                       widget=forms.TextInput,
                                                        error_messages={"required": ERROR_MESSAGES["PAY_AMOUNT_REQUIRED"],
                                                                        "incomplete": ERROR_MESSAGES["PAY_AMOUNT_REQUIRED"]})
 
@@ -304,8 +299,7 @@ class YourFinancesSelfEmployedForm(BaseStageForm):
 
     self_employed_pay_amount = forms.DecimalField(label=_("What's your average take home pay?"),
                                                   localize=True,
-                                                  widget=forms.TextInput(attrs={"pattern": "[0-9]*",
-                                                                                "class": "form-control-inline"}),
+                                                  widget=forms.TextInput,
                                                   error_messages={"required": ERROR_MESSAGES["PAY_AMOUNT_REQUIRED"],
                                                                   "incomplete": ERROR_MESSAGES["PAY_AMOUNT_REQUIRED"]})
 
@@ -329,7 +323,7 @@ class YourFinancesBenefitsForm(BaseStageForm):
     benefits_details = forms.CharField(label=_("Which benefits do you receive?"),
                                        help_text=_("For example, Income Support or Disability Living Allowance."),
                                        max_length=500,
-                                       widget=forms.Textarea(attrs={"rows": "2", "class": "form-control"}),
+                                       widget=forms.Textarea,
                                        error_messages={"required": ERROR_MESSAGES["BENEFITS_DETAILS_REQUIRED"]})
 
     benefits_dependents = forms.TypedChoiceField(widget=RadioSelect(renderer=DSRadioFieldRenderer),
@@ -346,8 +340,7 @@ class YourFinancesBenefitsForm(BaseStageForm):
 
     benefits_pay_amount = forms.DecimalField(label=_("What's your average take home pay?"),
                                          localize=True,
-                                         widget=forms.TextInput(attrs={"pattern": "[0-9]*",
-                                                                       "class": "form-control-inline"}),
+                                         widget=forms.TextInput,
                                          error_messages={"required": ERROR_MESSAGES["PAY_AMOUNT_REQUIRED"],
                                                          "incomplete": ERROR_MESSAGES["PAY_AMOUNT_REQUIRED"]})
 
@@ -361,13 +354,12 @@ class YourFinancesBenefitsForm(BaseStageForm):
 class YourFinancesOtherForm(BaseStageForm):
     other_details = forms.CharField(max_length=500, label=_("Provide details"),
                                     help_text=_("For example, student or retired."),
-                                    widget=forms.TextInput(attrs={"class": "form-control"}),
+                                    widget=forms.TextInput,
                                     error_messages={"required": ERROR_MESSAGES["OTHER_INFO_REQUIRED"]})
 
     other_pay_amount = forms.DecimalField(label=_("What is your monthly disposable income?"),
                                           localize=True,
-                                          widget=forms.TextInput(attrs={"pattern": "[0-9]*",
-                                                                        "class": "form-control-inline"}),
+                                          widget=forms.TextInput,
                                           error_messages={"required": ERROR_MESSAGES["PAY_AMOUNT_REQUIRED"],
                                                           "incomplete": ERROR_MESSAGES["PAY_AMOUNT_REQUIRED"]})
 
@@ -383,7 +375,7 @@ class HardshipForm(BaseStageForm):
     hardship_details = forms.CharField(
         label=_("How would paying a fine cause you serious financial problems?"),
         help_text=_("Why you think the court should allow you to pay your fine in instalments:"),
-        widget=forms.Textarea(attrs={"cols": 45, "rows": 5, "class": "form-control"}),
+        widget=forms.Textarea,
         required=True,
         error_messages={"required": ERROR_MESSAGES["HARDSHIP_DETAILS_REQUIRED"]})
 
@@ -396,8 +388,7 @@ class HouseholdExpensesForm(BaseStageForm):
         required=False,
         label=_("Accommodation"),
         help_text=_("Rent, mortgage or lodgings"),
-        widget=forms.TextInput(attrs={"pattern": "[0-9]*",
-                                      "class": "form-control-inline"}),
+        widget=forms.TextInput,
         error_messages={"required": ERROR_MESSAGES["HOUSEHOLD_ACCOMMODATION_REQUIRED"],
                         "invalid": ERROR_MESSAGES["HOUSEHOLD_ACCOMMODATION_INVALID"],
                         "min_value": ERROR_MESSAGES["HOUSEHOLD_ACCOMMODATION_MIN"]})
@@ -409,8 +400,7 @@ class HouseholdExpensesForm(BaseStageForm):
         required=False,
         label=_("Utility bills"),
         help_text=_("Gas, water, electricity etc"),
-        widget=forms.TextInput(attrs={"pattern": "[0-9]*",
-                                      "class": "form-control-inline"}),
+        widget=forms.TextInput,
         error_messages={"required": ERROR_MESSAGES["HOUSEHOLD_UTILITY_BILLS_REQUIRED"],
                         "invalid": ERROR_MESSAGES["HOUSEHOLD_UTILITY_BILLS_INVALID"],
                         "min_value": ERROR_MESSAGES["HOUSEHOLD_UTILITY_BILLS_MIN"]})
@@ -422,8 +412,7 @@ class HouseholdExpensesForm(BaseStageForm):
         required=False,
         label=_("Insurance"),
         help_text=_("Home, life insurance etc"),
-        widget=forms.TextInput(attrs={"pattern": "[0-9]*",
-                                      "class": "form-control-inline"}),
+        widget=forms.TextInput,
         error_messages={"required": ERROR_MESSAGES["HOUSEHOLD_INSURANCE_REQUIRED"],
                         "invalid": ERROR_MESSAGES["HOUSEHOLD_INSURANCE_INVALID"],
                         "min_value": ERROR_MESSAGES["HOUSEHOLD_INSURANCE_MIN"]})
@@ -434,8 +423,7 @@ class HouseholdExpensesForm(BaseStageForm):
         localize=True,
         required=False,
         label=_("Council tax"),
-        widget=forms.TextInput(attrs={"pattern": "[0-9]*",
-                                      "class": "form-control-inline"}),
+        widget=forms.TextInput,
         error_messages={"required": ERROR_MESSAGES["HOUSEHOLD_COUNCIL_TAX_REQUIRED"],
                         "invalid": ERROR_MESSAGES["HOUSEHOLD_COUNCIL_TAX_INVALID"],
                         "min_value": ERROR_MESSAGES["HOUSEHOLD_COUNCIL_TAX_MIN"]})
@@ -456,8 +444,7 @@ class OtherExpensesForm(BaseStageForm):
         required=False,
         label=_("Television subscription"),
         help_text=_("TV licence, satellite etc"),
-        widget=forms.TextInput(attrs={"pattern": "[0-9]*",
-                                      "class": "form-control-inline"}),
+        widget=forms.TextInput,
         error_messages={"required": ERROR_MESSAGES["OTHER_TV_SUBSCRIPTION_REQUIRED"],
                         "invalid": ERROR_MESSAGES["OTHER_TV_SUBSCRIPTION_INVALID"],
                         "min_value": ERROR_MESSAGES["OTHER_TV_SUBSCRIPTION_MIN"]})
@@ -469,8 +456,7 @@ class OtherExpensesForm(BaseStageForm):
         required=False,
         label=_("Travel expenses"),
         help_text=_("Fuel, car, public transport etc"),
-        widget=forms.TextInput(attrs={"pattern": "[0-9]*",
-                                      "class": "form-control-inline"}),
+        widget=forms.TextInput,
         error_messages={"required": ERROR_MESSAGES["OTHER_TRAVEL_EXPENSES_REQUIRED"],
                         "invalid": ERROR_MESSAGES["OTHER_TRAVEL_EXPENSES_INVALID"],
                         "min_value": ERROR_MESSAGES["OTHER_TRAVEL_EXPENSES_MIN"]})
@@ -482,8 +468,7 @@ class OtherExpensesForm(BaseStageForm):
         required=False,
         label=_("Telephone"),
         help_text=_("Landline and/or mobile"),
-        widget=forms.TextInput(attrs={"pattern": "[0-9]*",
-                                      "class": "form-control-inline"}),
+        widget=forms.TextInput,
         error_messages={"required": ERROR_MESSAGES["OTHER_TELEPHONE_REQUIRED"],
                         "invalid": ERROR_MESSAGES["OTHER_TELEPHONE_INVALID"],
                         "min_value": ERROR_MESSAGES["OTHER_TELEPHONE_MIN"]})
@@ -495,8 +480,7 @@ class OtherExpensesForm(BaseStageForm):
         required=False,
         label=_("Loan repayments"),
         help_text=_("Credit card, bank etc"),
-        widget=forms.TextInput(attrs={"pattern": "[0-9]*",
-                                      "class": "form-control-inline"}),
+        widget=forms.TextInput,
         error_messages={"required": ERROR_MESSAGES["OTHER_LOAN_REPAYMENTS_REQUIRED"],
                         "invalid": ERROR_MESSAGES["OTHER_LOAN_REPAYMENTS_INVALID"],
                         "min_value": ERROR_MESSAGES["OTHER_LOAN_REPAYMENTS_MIN"]})
@@ -507,8 +491,7 @@ class OtherExpensesForm(BaseStageForm):
         localize=True,
         required=False,
         label=_("County court orders"),
-        widget=forms.TextInput(attrs={"pattern": "[0-9]*",
-                                      "class": "form-control-inline"}),
+        widget=forms.TextInput,
         error_messages={"required": ERROR_MESSAGES["OTHER_COURT_PAYMENTS_REQUIRED"],
                         "invalid": ERROR_MESSAGES["OTHER_COURT_PAYMENTS_INVALID"],
                         "min_value": ERROR_MESSAGES["OTHER_COURT_PAYMENTS_MIN"]})
@@ -519,8 +502,7 @@ class OtherExpensesForm(BaseStageForm):
         localize=True,
         required=False,
         label=_("Child maintenance"),
-        widget=forms.TextInput(attrs={"pattern": "[0-9]*",
-                                      "class": "form-control-inline"}),
+        widget=forms.TextInput,
         error_messages={"required": ERROR_MESSAGES["OTHER_CHILD_MAINTENANCE_REQUIRED"],
                         "invalid": ERROR_MESSAGES["OTHER_CHILD_MAINTENANCE_INVALID"],
                         "min_value": ERROR_MESSAGES["OTHER_CHILD_MAINTENANCE_MIN"]})
@@ -551,17 +533,13 @@ class CompanyFinancesForm(SplitStageForm):
                                             error_messages={"required": ERROR_MESSAGES["COMPANY_TRADING_PERIOD"]})
 
     number_of_employees = forms.IntegerField(label=_("Number of employees"),
-                                             widget=forms.TextInput(attrs={"pattern": "[0-9]*",
-                                                                           "maxlength": "5",
-                                                                           "class": "form-control-inline"}),
+                                             widget=forms.TextInput,
                                              min_value=1,
                                              max_value=10000,
                                              localize=True,
                                              error_messages={"required": ERROR_MESSAGES["COMPANY_NUMBER_EMPLOYEES"]})
 
-    gross_turnover = forms.DecimalField(widget=forms.TextInput(attrs={"pattern": "[0-9]*",
-                                                                      "maxlength": "10",
-                                                                      "class": "form-control-inline"}),
+    gross_turnover = forms.DecimalField(widget=forms.TextInput,
                                         max_digits=10,
                                         decimal_places=2,
                                         localize=True,
@@ -569,9 +547,7 @@ class CompanyFinancesForm(SplitStageForm):
                                         help_text=_("For example, 150000"),
                                         error_messages={"required": ERROR_MESSAGES["COMPANY_GROSS_TURNOVER"]})
 
-    net_turnover = forms.DecimalField(widget=forms.TextInput(attrs={"pattern": "[0-9]*",
-                                                                    "maxlength": "10",
-                                                                    "class": "form-control-inline"}),
+    net_turnover = forms.DecimalField(widget=forms.TextInput,
                                       label=_("Net turnover"),
                                       help_text=_("For example, 110000"),
                                       max_digits=10,
@@ -606,7 +582,7 @@ class ConfirmationForm(BaseStageForm):
                                                    help_text=_("We'll use this for all future correspondence as well as contacting you by post."),
                                                    error_messages={"required": ERROR_MESSAGES["RECEIVE_EMAIL_UPDATES_REQUIRED"]})
 
-    email = forms.EmailField(widget=forms.TextInput(attrs={"type": "email", "class": "form-control"}),
+    email = forms.EmailField(widget=forms.TextInput,
                                           required=False,
                                           label="",
                                           help_text=_("If yes, enter your email address here:"),
@@ -632,13 +608,13 @@ class BasePleaForm(SplitStageForm):
                                error_messages={"required": ERROR_MESSAGES["PLEA_REQUIRED"]})
 
     guilty_extra = forms.CharField(label=_("Mitigation"),
-                                   widget=Textarea(attrs={"class": "form-control", "rows": "4"}),
+                                   widget=Textarea,
                                    help_text=_("Is there something you would like the court to consider?"),
                                    required=False,
                                    max_length=5000)
 
     not_guilty_extra = forms.CharField(label=_("Not guilty because?"),
-                                       widget=Textarea(attrs={"class": "form-control", "rows": "4"}),
+                                       widget=Textarea,
                                        help_text=_("Why do you believe you are not guilty?"),
                                        max_length=5000,
                                        error_messages={"required": ERROR_MESSAGES["NOT_GUILTY_REQUIRED"]})
@@ -650,7 +626,7 @@ class BasePleaForm(SplitStageForm):
                                                 label=_("Do you need an interpreter in court?"),
                                                 error_messages={"required": ERROR_MESSAGES["INTERPRETER_NEEDED_REQUIRED"]})
 
-    interpreter_language = forms.CharField(widget=forms.TextInput(attrs={"class": "form-control"}),
+    interpreter_language = forms.CharField(widget=forms.TextInput,
                                            max_length=100,
                                            required=True,
                                            label="",
@@ -665,7 +641,7 @@ class BasePleaForm(SplitStageForm):
                                                     error_messages={"required": ERROR_MESSAGES["DISAGREE_WITH_EVIDENCE_REQUIRED"]})
 
     disagree_with_evidence_details = forms.CharField(label="",
-                                                     widget=Textarea(attrs={"class": "form-control", "rows": "3"}),
+                                                     widget=Textarea(attrs={"rows": "3"}),
                                                      help_text=_("If yes, tell us the name of the witness (on the top left of the statement) and what you disagree with:"),
                                                      max_length=5000,
                                                      error_messages={"required": ERROR_MESSAGES["DISAGREE_WITH_EVIDENCE_DETAILS_REQUIRED"]})
@@ -679,7 +655,7 @@ class BasePleaForm(SplitStageForm):
                                             error_messages={"required": ERROR_MESSAGES["WITNESS_NEEDED_REQUIRED"]})
 
     witness_details = forms.CharField(label="",
-                                      widget=Textarea(attrs={"class": "form-control", "rows": "3"}),
+                                      widget=Textarea(attrs={"rows": "3"}),
                                       help_text=_("If yes, tell us the name, address and date of birth of any witnesses you want to call  to support your case:"),
                                       max_length=5000,
                                       error_messages={"required": ERROR_MESSAGES["WITNESS_DETAILS_REQUIRED"]})
@@ -691,7 +667,7 @@ class BasePleaForm(SplitStageForm):
                                                         label=_("Does your witness need an interpreter in court?"),
                                                         error_messages={"required": ERROR_MESSAGES["WITNESS_INTERPRETER_NEEDED_REQUIRED"]})
 
-    witness_interpreter_language = forms.CharField(widget=forms.TextInput(attrs={"class": "form-control"}),
+    witness_interpreter_language = forms.CharField(widget=forms.TextInput,
                                                    max_length=100,
                                                    required=True,
                                                    label="",
@@ -742,7 +718,7 @@ class SJPPleaForm(BasePleaForm):
                                                     label=_("Do you need an interpreter in court?"),
                                                     error_messages={"required": ERROR_MESSAGES["INTERPRETER_NEEDED_REQUIRED"]})
 
-    sjp_interpreter_language = forms.CharField(widget=forms.TextInput(attrs={"class": "form-control"}),
+    sjp_interpreter_language = forms.CharField(widget=forms.TextInput,
                                                max_length=100,
                                                required=True,
                                                label="",
@@ -770,7 +746,7 @@ class SJPPleaForm(BasePleaForm):
 
 
 class CourtFinderForm(forms.Form):
-    urn = forms.CharField(widget=forms.TextInput(attrs={"class": "form-control"}),
+    urn = forms.CharField(widget=forms.TextInput,
                           label=_("Unique reference number (URN)"),
                           required=True,
                           validators=[is_urn_valid],

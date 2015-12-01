@@ -2,7 +2,7 @@
 
 {% load i18n %}
 {% load form_widgets %}
-{% load testing %}
+{% load widget_tweaks %}
 
 {% block page_title %}{% blocktrans %}Your expenses{% endblocktrans %} - {{ block.super }}{% endblock %}
 
@@ -22,19 +22,19 @@
 
     <div class="grid-row">
         <div class="column-half">
-            {% std_field form.household_accommodation hide_optional=True prefix="£" %}
+            {% std_field form.household_accommodation|attr:"class:form-control-inline"|attr:"pattern:[0-9]*" hide_optional=True prefix="£" %}
         </div>
         <div class="column-half">
-            {% std_field form.household_utility_bills hide_optional=True prefix="£" %}
+            {% std_field form.household_utility_bills|attr:"class:form-control-inline"|attr:"pattern:[0-9]*" hide_optional=True prefix="£" %}
         </div>
     </div>
 
     <div class="grid-row">
         <div class="column-half">
-            {% std_field form.household_insurance hide_optional=True prefix="£" %}
+            {% std_field form.household_insurance|attr:"class:form-control-inline"|attr:"pattern:[0-9]*" hide_optional=True prefix="£" %}
         </div>
         <div class="column-half">
-            {% std_field form.household_council_tax hide_optional=True prefix="£" %}
+            {% std_field form.household_council_tax|attr:"class:form-control-inline"|attr:"pattern:[0-9]*" hide_optional=True prefix="£" %}
         </div>
     </div>
 
