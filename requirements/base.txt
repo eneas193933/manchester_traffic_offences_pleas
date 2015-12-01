@@ -16,7 +16,7 @@ django-brake==1.3.1
 django-waffle==0.10.1
 django-celery==3.1.16
 djangorestframework==3.1.2
-django-premailer==2.9.2
+django-premailer==0.1.0
 django-passwords==0.3.4
 
 requests==2.7.0
