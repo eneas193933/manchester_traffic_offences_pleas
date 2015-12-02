@@ -4,7 +4,9 @@ from django.conf.urls import patterns, url
 from django.contrib.auth import views as auth_views
 
 from django.views.generic import TemplateView
-from court_admin.forms import StrongPasswordChangeForm
+from court_admin.forms import (CourtAdminAuthenticationForm,
+                               CourtAdminPasswordResetForm,
+                               CourtAdminPasswordChangeForm)
 from views import UsageStatsView, InviteUserView, CourtAdminListView, RegisterView
 
 
@@ -23,7 +25,8 @@ urlpatterns = patterns("",
     url(r"^register/done/$", TemplateView.as_view(template_name="court_registration/register_done.html"), name="register_done"),
 
     url(r'^login/$', auth_views.login,
-        {'template_name': 'court_registration/login.html'},
+        {'template_name': 'court_registration/login.html',
+         'authentication_form': CourtAdminAuthenticationForm},
         name='login'),
 
     url(r'^logout/$', auth_views.logout_then_login,
@@ -32,7 +35,7 @@ urlpatterns = patterns("",
 
     url(r'^password-change/$', auth_views.password_change,
         {'template_name': 'court_registration/password_change_form.html',
-         'password_change_form': StrongPasswordChangeForm},
+         'password_change_form': CourtAdminPasswordChangeForm},
         name='password_change'),
 
     url(r'^password-change/done/$', auth_views.password_change_done,
@@ -41,8 +44,9 @@ urlpatterns = patterns("",
 
     url(r'^password-reset/$', auth_views.password_reset,
         {'template_name': 'court_registration/password_reset_form.html',
-         'email_template_name': 'court_registration/password_reset_email.html',
-         'subject_template_name': 'court_registration/password_reset_subject.txt'},
+         'password_reset_form': CourtAdminPasswordResetForm,
+         'email_template_name': 'emails/password_reset_email.html',
+         'subject_template_name': 'emails/password_reset_subject.txt'},
         name='password_reset'),
 
     url(r'^password-reset/done/$', auth_views.password_reset_done,

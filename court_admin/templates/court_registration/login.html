@@ -1,37 +1,61 @@
-{% extends "base.html" %}
+{% extends "base_court_admin.html" %}
 
-{% block content %}
+{% load i18n %}
+{% load form_widgets %}
+{% load widget_tweaks %}
 
-{% if form.errors %}
-<p>Your username and password didn't match. Please try again.</p>
-{% endif %}
+{% block page_title %}{% blocktrans %}Login{% endblocktrans %} - {{ block.super }}{% endblock %}
 
-{% if next %}
-    {% if user.is_authenticated %}
-    <p>Your account doesn't have access to this page. To proceed,
-    please login with an account that has access.</p>
-    {% else %}
-    <p>Please login to see this page.</p>
+{% block page_content %}
+
+    {% if form.error_messages.invalid_login in form.non_field_errors %}
+    <section class="error-summary" role="alert">
+        <h1 class="heading-medium">{% blocktrans %}Your login details have not been recognised{% endblocktrans %}</h1>
+        <p>{% blocktrans %}Please try again.{% endblocktrans %}</p>
+        <p><a href="{% url 'password_reset' %}">{% blocktrans %}Forgotten password?{% endblocktrans %}</a></p>
+    </section>
+    {% elif form.errors %}
+    <section class="error-summary" role="alert">
+        <h1 class="heading-medium">{% blocktrans %}You need to fix the errors on this page before continuing.{% endblocktrans %}</h1>
+
+        <p>{% blocktrans %}See highlighted errors below.{% endblocktrans %}</p>
+
+        <ul>
+        {% for field in form %}
+            {% if field.errors %}
+            <li><a href="#section_{{ field.name }}">{{ field.errors|striptags }}</a></li>
+            {% endif %}
+        {% endfor %}
+        </ul>
+    </section>
     {% endif %}
-{% endif %}
 
-<form method="post" action="{% url 'django.contrib.auth.views.login' %}">
-{% csrf_token %}
-<table>
-<tr>
-    <td>{{ form.username.label_tag }}</td>
-    <td>{{ form.username }}</td>
-</tr>
-<tr>
-    <td>{{ form.password.label_tag }}</td>
-    <td>{{ form.password }}</td>
-</tr>
-</table>
+    {% if next and user.is_authenticated %}
+    <section class="error-summary" role="alert">
+        <h1 class="heading-medium">{% blocktrans %}Your account doesn't have access to this page{% endblocktrans %}</h1>
+        <p>{% blocktrans %}To proceed, please login with an account that has access.{% endblocktrans %}</p>
+    </section>
+    {% endif %}
 
-<input type="submit" value="login" />
-<input type="hidden" name="next" value="{{ next }}" />
-</form>
+    <header class="content-header">
+        <h1>{% blocktrans %}Login{% endblocktrans %}</h1>
+    </header>
 
-<p><a href="{% url 'password_reset' %}">Lost password?</a></p>
+
+    <form method="post" action="{{ request.path }}" autocomplete="off" novalidate>
+        {% csrf_token %}
+        <input type="hidden" name="next" value="{{ next }}" />
+
+        {% std_field form.username %}
+
+        {% std_field form.password %}
+
+        <div class="form-submit">
+            <button class="button" type="submit">{% blocktrans %}Sign in{% endblocktrans %}</button>
+        </div>
+
+    </form>
+
+    <p><a href="{% url 'password_reset' %}">Forgotten password?</a></p>
 
 {% endblock %}

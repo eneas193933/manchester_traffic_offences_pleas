@@ -5,17 +5,33 @@ from django import forms
 from django.core.urlresolvers import reverse
 from django.db import IntegrityError
 from django.contrib.auth.models import User, Permission
-from django.contrib.auth.forms import PasswordChangeForm, SetPasswordForm
+from django.contrib.auth.forms import (AuthenticationForm,
+                                       PasswordResetForm,
+                                       PasswordChangeForm,
+                                       SetPasswordForm)
 from django.template.loader import render_to_string
 from django.utils.encoding import force_bytes, force_text
 from django.utils.http import urlsafe_base64_encode, urlsafe_base64_decode
-from django.utils.translation import ugettext, ugettext_lazy as _
+from django.utils.translation import ugettext_lazy as _
 
-from passwords.fields import PasswordField
-
+from apps.forms.forms import reorder_fields
 from apps.plea.models import Court
 from models import CourtAdminProfile
 from token import token_generator
+from messages import ERROR_MESSAGES
+from validators import is_email_hmcts, is_username_available
+
+
+new_password_field = forms.CharField(widget=forms.PasswordInput,
+                                     label=_("Password"),
+                                     help_text=_("Your password must have at least 6 characters."),
+                                     min_length=6,
+                                     error_messages={"required": ERROR_MESSAGES["NEW_PASSWORD_REQUIRED"],
+                                                     "min_length": ERROR_MESSAGES["PASSWORD_MIN_LENGTH"]})
+
+password_confirm_field = forms.CharField(widget=forms.PasswordInput,
+                                         label=_("Re-type your password"),
+                                         error_messages={"required": ERROR_MESSAGES["NEW_PASSWORD_CONFIRM_REQUIRED"]})
 
 
 class EmailNotAvailable(Exception):
@@ -26,12 +42,63 @@ class UsernameNotAvailable(Exception):
     pass
 
 
-class StrongPasswordChangeForm(PasswordChangeForm):
-    new_password1 = PasswordField(label=_("New password"))
+class CourtAdminAuthenticationForm(AuthenticationForm):
+
+    username = forms.CharField(label=_("Username"),
+                               max_length=254,
+                               error_messages={"required": ERROR_MESSAGES["USERNAME_REQUIRED"]})
+
+    password = forms.CharField(widget=forms.PasswordInput,
+                               label=_("Password"),
+                               error_messages={"required": ERROR_MESSAGES["PASSWORD_REQUIRED"]})
+
+    error_messages = {
+        "invalid_login": "INVALID_LOGIN",
+        "inactive": "INACTIVE_USER"
+    }
 
 
-class StrongSetPasswordForm(SetPasswordForm):
-    new_password1 = PasswordField(label=_("New password"))
+class CourtAdminPasswordResetForm(PasswordResetForm):
+
+    email = forms.EmailField(label=_("Email address"),
+                             help_text=_("Enter your registered HMCTS email address."),
+                             max_length=254,
+                             validators=[is_email_hmcts],
+                             error_messages={"required": ERROR_MESSAGES["EMAIL_REQUIRED"],
+                                             "invalid": ERROR_MESSAGES["EMAIL_INVALID"],
+                                             "is_email_hmcts": ERROR_MESSAGES["EMAIL_HMCTS_INVALID"]})
+
+
+class CourtAdminSetPasswordForm(SetPasswordForm):
+
+    new_password1 = new_password_field
+
+    new_password2 = password_confirm_field
+
+    error_messages = {
+        "password_mismatch": ERROR_MESSAGES["PASSWORD_MISMATCH"]
+    }
+
+
+class CourtAdminPasswordChangeForm(PasswordChangeForm):
+
+    old_password = forms.CharField(label=_("Old password"),
+                                   widget=forms.PasswordInput,
+                                   error_messages={"required": ERROR_MESSAGES["OLD_PASSWORD_REQUIRED"]})
+
+    new_password1 = new_password_field
+
+    new_password2 = password_confirm_field
+
+    error_messages = {
+        "password_incorrect": ERROR_MESSAGES["OLD_PASSWORD_INCORRECT"],
+        "password_mismatch": ERROR_MESSAGES["PASSWORD_MISMATCH"]
+    }
+
+    def __init__(self, *args, **kwargs):
+        super(CourtAdminPasswordChangeForm, self).__init__(*args, **kwargs)
+        fields_order = ["old_password", "new_password1", "new_password2"]
+        self.fields = reorder_fields(self.fields, fields_order)
 
 
 class InviteUserForm(forms.Form):
@@ -108,25 +175,20 @@ class InviteUserForm(forms.Form):
 
 class RegistrationForm(forms.Form):
 
-    username = forms.CharField(max_length=30)
-    first_name = forms.CharField(max_length=30)
-    last_name = forms.CharField(max_length=30)
-    password = PasswordField(required=True)
-    password2 = forms.CharField(widget=forms.PasswordInput(), required=True)
+    username = forms.CharField(label=_("Username"),
+                               max_length=254,
+                               validators=[is_username_available],
+                               error_messages={"required": ERROR_MESSAGES["NEW_USERNAME_REQUIRED"],
+                                               "is_username_available": ERROR_MESSAGES["NEW_USERNAME_TAKEN"]})
 
-    def clean(self):
-        cleaned_data = super(RegistrationForm, self).clean()
+    first_name = forms.CharField(label=_("First name"),
+                                 error_messages={"required": ERROR_MESSAGES["FIRST_NAME_REQUIRED"]})
 
-        password = cleaned_data.get("password", None)
-        password2 = cleaned_data.get("password2", None)
+    last_name = forms.CharField(label=_("Last name"),
+                                 error_messages={"required": ERROR_MESSAGES["LAST_NAME_REQUIRED"]})
 
-        if password and password2 and password != password2:
-            raise forms.ValidationError("Entered passwords do not match")
-
-        username = cleaned_data["username"]
-
-        if User.objects.filter(username=username).exists():
-            raise forms.ValidationError("Username already exists")
+    password1 = new_password_field
+    password2 = password_confirm_field
 
     @staticmethod
     def verify_token(uidb64, token):

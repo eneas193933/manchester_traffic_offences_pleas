@@ -1,3 +1,5 @@
+from collections import OrderedDict
+
 from django import forms
 from django.forms.formsets import BaseFormSet
 from django.utils.translation import ugettext_lazy as _
@@ -18,6 +20,14 @@ YESNO_CHOICES = {
 }
 
 to_bool = lambda x: x == "True"
+
+
+def reorder_fields(fields, order):
+    for key, v in fields.items():
+        if key not in order:
+            del fields[key]
+
+    return OrderedDict(sorted(fields.items(), key=lambda k: order.index(k[0])))
 
 
 class RequiredFormSet(BaseFormSet):

@@ -13,21 +13,13 @@ DATABASES = {
     }
 }
 
-del TEMPLATE_CONTEXT_PROCESSORS[TEMPLATE_CONTEXT_PROCESSORS.index('apps.feedback.context_processors.feedback')]
-
 # for court-admin - may need to be moved to its own settings file when we figure out whwere the app will live
 LOGIN_REDIRECT_URL = "/"
 LOGIN_URL = "/login/"
 
-PASSWORD_MIN_LENGTH = 8
-PASSWORD_MAX_LENGTH = 120
+VALID_HMCTS_EMAIL_DOMAINS = []
 
-PASSWORD_COMPLEXITY = {
-    "UPPER": 1,
-    "LOWER": 1,
-    "DIGITS": 1,
-    "PUNCTUATION": 1
-}
+PASSWORD_MIN_LENGTH = 8
 
 # .local.py overrides all the common settings.
 try:

@@ -1,7 +1,6 @@
 from __future__ import unicode_literals
 
 from collections import OrderedDict
-
 from django import forms
 from django.forms.widgets import Textarea, RadioSelect
 from django.utils.translation import ugettext_lazy as _
@@ -9,6 +8,7 @@ from django.utils.translation import ugettext_lazy as _
 from apps.forms.fields import DSRadioFieldRenderer, DateWidget
 from apps.forms.forms import (YESNO_CHOICES,
                               to_bool,
+                              reorder_fields,
                               BaseStageForm,
                               SplitStageForm)
 
@@ -24,14 +24,6 @@ from .validators import (is_date_in_past,
 PERIOD_CHOICES = (("Weekly", _("Weekly")),
                   ("Fortnightly", _("Fortnightly")),
                   ("Monthly", _("Monthly")))
-
-
-def reorder_fields(fields, order):
-    for key, v in fields.items():
-        if key not in order:
-            del fields[key]
-
-    return OrderedDict(sorted(fields.items(), key=lambda k: order.index(k[0])))
 
 
 class URNEntryForm(BaseStageForm):
