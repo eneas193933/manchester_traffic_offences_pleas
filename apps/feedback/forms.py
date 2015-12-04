@@ -61,11 +61,9 @@ class ServiceForm(SplitStageForm):
 class CommentsForm(BaseStageForm):
     comments = forms.CharField(label=_("If you have any further comments about this service, tell us here:"),
                                required=False,
-                               widget=forms.Textarea(attrs={"rows": 4,
-                                                             "cols": 50,
-                                                             "class": "form-control"}))
+                               widget=forms.Textarea)
 
     email = forms.EmailField(label=_("Email address"),
                              required=False,
                              help_text=_("If you'd like us to get back to you, tell us your email address below:"),
-                             widget=forms.TextInput(attrs={"class": "form-control"}))
+                             widget=forms.TextInput)

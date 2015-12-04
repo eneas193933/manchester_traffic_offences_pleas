@@ -2,6 +2,7 @@
 
 {% load i18n %}
 {% load form_widgets %}
+{% load widget_tweaks %}
 
 {% block page_title %}{% blocktrans %}Your finances{% endblocktrans %} - {{ block.super }}{% endblock %}
 
@@ -24,7 +25,7 @@
 
         {% radio_field form.employed_pay_period hide_optional=True %}
 
-        {% std_field form.employed_pay_amount hide_optional=True prefix="£" %}
+        {% std_field form.employed_pay_amount|attr:"class:form-control-inline"|attr:"pattern:[0-9]*" hide_optional=True prefix="£" %}
 
         {% radio_field form.employed_hardship hide_optional=True inline=True %}
 
@@ -39,7 +40,7 @@
 
         {% radio_field form.self_employed_pay_period hide_optional=True %}
 
-        {% std_field form.self_employed_pay_amount hide_optional=True prefix="£" %}
+        {% std_field form.self_employed_pay_amount|attr:"class:form-control-inline"|attr:"pattern:[0-9]*" hide_optional=True prefix="£" %}
 
         {% radio_field form.self_employed_hardship hide_optional=True inline=True %}
 
@@ -52,13 +53,13 @@
 
     {% if your_status.you_are == "Receiving benefits" %}
 
-        {% std_field form.benefits_details hide_optional=True %}
+        {% std_field form.benefits_details|attr:"rows:2" hide_optional=True %}
 
         {% radio_field form.benefits_dependents hide_optional=True inline=True %}
 
         {% radio_field form.benefits_pay_period hide_optional=True %}
 
-        {% std_field form.benefits_pay_amount hide_optional=True prefix="£" %}
+        {% std_field form.benefits_pay_amount|attr:"class:form-control-inline"|attr:"pattern:[0-9]*" hide_optional=True prefix="£" %}
 
         {% radio_field form.benefits_hardship hide_optional=True inline=True %}
 
@@ -73,7 +74,7 @@
 
         {% std_field form.other_details hide_optional=True %}
 
-        {% std_field form.other_pay_amount hide_optional=True prefix="£" %}
+        {% std_field form.other_pay_amount|attr:"class:form-control-inline"|attr:"pattern:[0-9]*" hide_optional=True prefix="£" %}
 
         {% radio_field form.other_hardship hide_optional=True inline=True %}
 

@@ -2,6 +2,7 @@
 
 {% load i18n %}
 {% load form_widgets %}
+{% load widget_tweaks %}
 {% load testing %}
 
 {% spaceless %}
@@ -53,7 +54,7 @@
 
     <div {% if company_finances.split_form != "split_form_last_step" %}class="nojs-hidden"{% endif %} data-conditional="trading_period" data-conditional-value="^(True|False)$">
 
-        {% std_field form.number_of_employees hide_optional=True %}
+        {% std_field form.number_of_employees|attr:"class:form-control-inline"|attr:"pattern:[0-9]*"|attr:"maxlength:5" hide_optional=True %}
 
         {% if company_finances.split_form == "split_form_last_step" %}
             {% if company_finances.trading_period == True %}
@@ -65,9 +66,9 @@
             <h2 id="accounts-heading" class="heading-medium">{% blocktrans %}From the most recent audited company accounts, tell us:{% endblocktrans %}</h2>
         {% endif %}
 
-        {% std_field form.gross_turnover hide_optional=True prefix="£" %}
+        {% std_field form.gross_turnover|attr:"class:form-control-inline"|attr:"pattern:[0-9]*"|attr:"maxlength:10" hide_optional=True prefix="£" %}
 
-        {% std_field form.net_turnover hide_optional=True prefix="£" %}
+        {% std_field form.net_turnover|attr:"class:form-control-inline"|attr:"pattern:[0-9]*"|attr:"maxlength:10" hide_optional=True prefix="£" %}
 
     </div>
 {% endblock stage_form %}

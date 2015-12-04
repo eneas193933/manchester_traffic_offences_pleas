@@ -1,9 +1,17 @@
-{% extends "base.html" %}
+{% extends "base_court_admin.html" %}
 
-{% block content %}
+{% load i18n %}
 
-    <h1>Registration success</h1>
+{% block page_title %}{% blocktrans %}Registration success{% endblocktrans %} - {{ block.super }}{% endblock %}
 
-    <p>Thanks for registering. You can now <a href="{% url 'login' %}">login</a> with your chosen credentials.</p>
+{% block page_content %}
+
+    <header class="success-header" role="alert">
+        <h1 class="ticked">{% blocktrans %}Registration success{% endblocktrans %}</h1>
+    </header>
+
+    <header class="content-header">
+        <p>Thanks for registering. You can now <a href="{% url 'login' %}">login</a> with your chosen credentials.</p>
+    </header>
 
 {% endblock %}

@@ -2,6 +2,7 @@
 
 {% load i18n %}
 {% load form_widgets %}
+{% load widget_tweaks %}
 
 {% block page_title %}{% blocktrans %}Your feedback{% endblocktrans %} - {{ block.super }}{% endblock %}
 
@@ -10,7 +11,7 @@
 {% endblock stage_header %}
 
 {% block stage_form %}
-    {% std_field form.comments %}
+    {% std_field form.comments|attr:"rows:4" %}
 
     {% std_field form.email %}
 {% endblock stage_form %}

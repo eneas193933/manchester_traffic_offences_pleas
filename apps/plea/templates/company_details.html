@@ -2,6 +2,7 @@
 
 {% load i18n %}
 {% load form_widgets %}
+{% load widget_tweaks %}
 
 {% block page_title %}{% blocktrans %}Your details{% endblocktrans %} - {{ block.super }}{% endblock %}
 
@@ -24,7 +25,7 @@
     {% radio_field form.correct_address inline=True wide=True %}
 
     <div class="panel-indent move-up" data-conditional="correct_address" data-conditional-value="False">
-        {% std_field form.updated_address hide_optional=True %}
+        {% std_field form.updated_address|attr:"rows:4" hide_optional=True %}
     </div>
 
     {% std_field form.first_name %}
@@ -33,5 +34,5 @@
 
     {% radio_field form.position_in_company %}
 
-    {% std_field form.contact_number %}
+    {% std_field form.contact_number|attr:"type:tel" %}
 {% endblock stage_form %}

@@ -15,18 +15,21 @@ class TestStatsBase(TestCase):
         self.court_1 = Court.objects.create(
             court_name="Court 01",
             region_code="01",
+            live_date=dt.date(2014, 1, 1),
             test_mode=False,
             enabled=True, court_address="x", court_telephone="x", court_email="x", submission_email="x")
 
         self.court_2 = Court.objects.create(
             court_name="Court 02",
             region_code="02",
+            live_date=dt.date(2014, 1, 1),
             test_mode=False,
             enabled=True, court_address="x", court_telephone="x", court_email="x", submission_email="x")
 
         self.court_3 = Court.objects.create(
             court_name="Court 03, Test mode",
             region_code="03",
+            live_date=dt.date(2014, 1, 1),
             test_mode=True,
             enabled=True, court_address="x", court_telephone="x", court_email="x", submission_email="x")
 
@@ -64,7 +67,7 @@ class TestStatsBase(TestCase):
 class CourtEmailCountManagerTestCase(TestStatsBase):
     def test_calculate_aggregates(self):
 
-        totals = CourtEmailCount.objects.calculate_aggregates(dt.date(2015, 1, 5), 7)
+        totals = CourtEmailCount.objects.calculate_aggregates(dt.date(2015, 1, 5), days=7)
 
         self.assertEquals(totals['submissions'], 4)
         self.assertEquals(totals['pleas'], 7)
@@ -73,7 +76,7 @@ class CourtEmailCountManagerTestCase(TestStatsBase):
 
     def test_null_entries_are_zero(self):
 
-        totals = CourtEmailCount.objects.calculate_aggregates(dt.date(2020, 1, 1), 7)
+        totals = CourtEmailCount.objects.calculate_aggregates(dt.date(2020, 1, 1), days=7)
 
         self.assertEquals(totals['submissions'], 0)
         self.assertEquals(totals['pleas'], 0)
@@ -223,9 +226,9 @@ class UsageStatsTestCase(TestStatsBase):
 
     def test_calculate_weekly_stats(self):
 
-        UsageStats.objects.create(start_date=dt.date(2014, 12, 29), online_submissions=0)
+        UsageStats.objects.create(start_date=dt.date(2014, 12, 29), online_submissions=0, court=self.court_1)
 
-        UsageStats.objects.calculate_weekly_stats(to_date=self.to_date)
+        UsageStats.objects.calculate_weekly_stats(to_date=self.to_date, court=self.court_1)
 
         self.assertEquals(UsageStats.objects.all().count(), 3)
 
@@ -235,5 +238,5 @@ class UsageStatsTestCase(TestStatsBase):
         self.assertEquals(wk1.online_submissions, 4)
 
         self.assertEquals(wk2.start_date, dt.date(2015, 01, 12))
-        self.assertEquals(wk2.online_submissions, 4)
+        self.assertEquals(wk2.online_submissions, 3)
 

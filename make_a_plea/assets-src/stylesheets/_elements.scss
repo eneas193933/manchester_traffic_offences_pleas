@@ -105,6 +105,24 @@ hr {
 	}
 }
 
+.success-header {
+	margin: 2em 0;
+	padding: 40px;
+	background: $turquoise;
+	color: $white;
+
+	h1,
+	p {
+		@include bold-36();
+		margin: 0;
+	}
+
+	.ticked {
+		padding-left: 40px;
+		background: url(../images/icons/tick.png) 0 7px no-repeat;
+	}
+}
+
 p.important {
 	padding: 7px 0 0 40px;
 	min-height: 27px;
