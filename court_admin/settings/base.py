@@ -32,7 +32,7 @@ INSTALLED_APPS = [
 
 # for court-admin - may need to be moved to its own settings file when we figure out whwere the app will live
 LOGIN_REDIRECT_URL = "/"
-LOGIN_URL = "/login/"
+LOGIN_URL = "/sign-in/"
 
 VALID_HMCTS_EMAIL_DOMAINS = []
 

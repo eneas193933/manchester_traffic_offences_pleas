@@ -1,40 +1,24 @@
-{% extends "base_court_admin.html" %}
+{% extends "base_court_admin_dashboard.html" %}
 
-{% block javascripts %}
-    {{ block.super }}
+{% load i18n %}
 
-    <script>
+{% block page_title %}{% blocktrans %}Overview{% endblocktrans %} - {{ block.super }}{% endblock %}
 
-        function updatePostalTotals(){
-            $(".response_total").each(function(i, obj){
+{% block dash_title %}Dashboard{% endblock %}
 
-                var idx = $(this).attr("rel");
+{% block tabs_nav %}
+<nav class="tabs-menu">
+    <ul>
+        <li><a class="active" href="{% url "dashboard" %}">{% blocktrans %}Overview{% endblocktrans %}</a></li>
+        <li><a href="{% url "postal_requisitions" %}">{% blocktrans %}Postal requisitions{% endblocktrans %}</a></li>
+        <li><a href="{% url "sjp_notices" %}">{% blocktrans %}SJP notices{% endblocktrans %}</a></li>
+    </ul>
+</nav>
+{% endblock tabs_nav %}
 
-                var guilty = $('#id_form-' + idx + '-postal_guilty_pleas').val();
-                var not_guilty = $('#id_form-' + idx + '-postal_not_guilty_pleas').val();
+{% block dash_content %}
 
-                if(Math.floor(guilty) == guilty && Math.floor(not_guilty) == not_guilty){
-                    $(this).html(parseInt(guilty) + parseInt(not_guilty));
-                }
-            });
-        }
-
-        $(document).ready(function(){
-           $("#court-selector").change(function(){
-               window.location = $(this).val();
-           });
-        });
-
-        $(document).ready(function() {
-            updatePostalTotals();
-
-            $('input[type=number]').change(updatePostalTotals);
-        });
-
-    </script>
-{% endblock %}
-
-{% block page_content %}
+    <h2>Overview</h2>
 
 <style>
 
@@ -60,14 +44,14 @@
             {% if user.is_superuser %}
             <select id="court-selector">
                 {% for court in courts %}
-                <option value="{% url 'usage_stats' court_id=court.id %}" {% if selected_court == court %}selected="selected" {% endif %}>
+                <option value="{% url 'dashboard' court_id=court.id %}" {% if selected_court == court %}selected="selected" {% endif %}>
                     {{ court.court_name }}
                 </option>
                 {% endfor %}
             </select> |
 
-            <a href="{% url 'invite_users' %}">Invite users</a> |
-            <a href="{% url 'court_admin_list' %}">View users</a>
+            <a href="{% url 'invite_user' %}">Invite user</a> |
+            <a href="{% url 'users' %}">View users</a>
             {% endif %}
         </td>
         <td style="text-align: right">

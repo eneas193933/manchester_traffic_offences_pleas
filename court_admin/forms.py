@@ -61,7 +61,7 @@ class CourtAdminAuthenticationForm(AuthenticationForm):
 class CourtAdminPasswordResetForm(PasswordResetForm):
 
     email = forms.EmailField(label=_("Email address"),
-                             help_text=_("Enter your registered HMCTS email address."),
+                             help_text=_("Your HMCTS email address."),
                              max_length=254,
                              validators=[is_email_hmcts],
                              error_messages={"required": ERROR_MESSAGES["EMAIL_REQUIRED"],
@@ -80,33 +80,25 @@ class CourtAdminSetPasswordForm(SetPasswordForm):
     }
 
 
-class CourtAdminPasswordChangeForm(PasswordChangeForm):
-
-    old_password = forms.CharField(label=_("Old password"),
-                                   widget=forms.PasswordInput,
-                                   error_messages={"required": ERROR_MESSAGES["OLD_PASSWORD_REQUIRED"]})
-
-    new_password1 = new_password_field
-
-    new_password2 = password_confirm_field
-
-    error_messages = {
-        "password_incorrect": ERROR_MESSAGES["OLD_PASSWORD_INCORRECT"],
-        "password_mismatch": ERROR_MESSAGES["PASSWORD_MISMATCH"]
-    }
-
-    def __init__(self, *args, **kwargs):
-        super(CourtAdminPasswordChangeForm, self).__init__(*args, **kwargs)
-        fields_order = ["old_password", "new_password1", "new_password2"]
-        self.fields = reorder_fields(self.fields, fields_order)
-
-
 class InviteUserForm(forms.Form):
 
-    email = forms.EmailField()
-    first_name = forms.CharField(max_length=255)
-    last_name = forms.CharField(max_length=255)
-    court = forms.ModelChoiceField(queryset=Court.objects.all())
+    email = forms.EmailField(label=_("Email address"),
+                             help_text=_("Enter the user's registered HMCTS email address."),
+                             max_length=254,
+                             validators=[is_email_hmcts],
+                             error_messages={"required": ERROR_MESSAGES["INVITE_EMAIL_REQUIRED"],
+                                             "invalid": ERROR_MESSAGES["EMAIL_INVALID"],
+                                             "is_email_hmcts": ERROR_MESSAGES["EMAIL_HMCTS_INVALID"]})
+
+    first_name = forms.CharField(label=_("First name"),
+                                 error_messages={"required": ERROR_MESSAGES["INVITE_FIRST_NAME_REQUIRED"]})
+
+    last_name = forms.CharField(label=_("Last name"),
+                                error_messages={"required": ERROR_MESSAGES["INVITE_LAST_NAME_REQUIRED"]})
+
+    court = forms.ModelChoiceField(label=_("Court"),
+                                   queryset=Court.objects.all(),
+                                   error_messages={"required": ERROR_MESSAGES["COURT_REQUIRED"]})
 
     @staticmethod
     def get_random_username():
@@ -167,8 +159,8 @@ class InviteUserForm(forms.Form):
 
         context.update(extra_context)
 
-        message = render_to_string("court_registration/invite_user_email.txt", context)
-        subject = render_to_string("court_registration/invite_user_email_subject.txt", context)
+        message = render_to_string("emails/invite_user_email.txt", context)
+        subject = render_to_string("emails/invite_user_email_subject.txt", context)
 
         user.email_user(subject, message, from_email="lyndon.garvey@digital.justice.gov.uk", fail_silently=False)
 
@@ -207,6 +199,54 @@ class RegistrationForm(forms.Form):
         user.username = self.cleaned_data["username"]
         user.first_name = self.cleaned_data["first_name"]
         user.last_name = self.cleaned_data["last_name"]
-        user.set_password(self.cleaned_data["password"])
+        user.set_password(self.cleaned_data["password1"])
         user.is_active = True
         user.save()
+
+
+class PersonalDetailsForm(forms.ModelForm):
+
+    username = forms.CharField(label=_("Username"),
+                               max_length=254,
+                               validators=[is_username_available],
+                               error_messages={"required": ERROR_MESSAGES["NEW_USERNAME_REQUIRED"],
+                                               "is_username_available": ERROR_MESSAGES["NEW_USERNAME_TAKEN"]})
+
+    first_name = forms.CharField(label=_("First name"),
+                                 error_messages={"required": ERROR_MESSAGES["FIRST_NAME_REQUIRED"]})
+
+    last_name = forms.CharField(label=_("Last name"),
+                                 error_messages={"required": ERROR_MESSAGES["LAST_NAME_REQUIRED"]})
+
+    email = forms.EmailField(label=_("Email"),
+                             help_text=_("Your HMCTS email address."),
+                             max_length=254,
+                             validators=[is_email_hmcts],
+                             error_messages={"required": ERROR_MESSAGES["INVITE_EMAIL_REQUIRED"],
+                                             "invalid": ERROR_MESSAGES["EMAIL_INVALID"],
+                                             "is_email_hmcts": ERROR_MESSAGES["EMAIL_HMCTS_INVALID"]})
+
+    class Meta:
+        model = User
+        fields = ["first_name", "last_name", "email", "username"]
+
+
+class CourtAdminPasswordChangeForm(PasswordChangeForm):
+
+    old_password = forms.CharField(label=_("Current password"),
+                                   widget=forms.PasswordInput,
+                                   error_messages={"required": ERROR_MESSAGES["OLD_PASSWORD_REQUIRED"]})
+
+    new_password1 = new_password_field
+
+    new_password2 = password_confirm_field
+
+    error_messages = {
+        "password_incorrect": ERROR_MESSAGES["OLD_PASSWORD_INCORRECT"],
+        "password_mismatch": ERROR_MESSAGES["PASSWORD_MISMATCH"]
+    }
+
+    def __init__(self, *args, **kwargs):
+        super(CourtAdminPasswordChangeForm, self).__init__(*args, **kwargs)
+        fields_order = ["old_password", "new_password1", "new_password2"]
+        self.fields = reorder_fields(self.fields, fields_order)

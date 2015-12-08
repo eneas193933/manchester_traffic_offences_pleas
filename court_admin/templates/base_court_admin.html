@@ -3,6 +3,7 @@
 {% load i18n %}
 {% load staticfiles %}
 {% load waffle_tags %}
+{% load debug %}
 
 {% block page_title %}{% blocktrans %}Make a Plea court administration{% endblocktrans %} - GOV.UK{% endblock page_title %}
 
@@ -24,7 +25,18 @@
 {% block proposition_header %}
     <div class="header-proposition">
       <div class="content">
-        <a href="/" id="proposition-name">{% blocktrans %}Make a Plea court administration{% endblocktrans %}</a>
+        {% if user.is_authenticated %}<a href="#proposition-links" class="js-header-toggle menu">Menu</a>{% endif %}
+        <nav id="proposition-menu">
+            <a href="{% url "dashboard" %}" id="proposition-name">{% blocktrans %}Make a Plea court administration{% endblocktrans %}</a>
+            {% if user.is_authenticated %}
+            <ul id="proposition-links">
+                <li><a{% if "/dashboard/" in request.path %} class="active"{% endif %} href="{% url "dashboard" %}">Dashboard</a></li>
+                <li><a{% if "/users/" in request.path %} class="active"{% endif %} href="{% url "users" %}">Users</a></li>
+                <li><a{% if "/settings/" in request.path %} class="active"{% endif %} href="{% url "personal_details" %}">Settings</a></li>
+                <li><a href="{% url "logout" %}">Sign out</a></li>
+            </ul>
+            {% endif %}
+        </nav>
       </div>
     </div>
 {% endblock proposition_header %}
@@ -43,13 +55,19 @@
                     </section>
                     {% endif %}
 
+                    {% if "info" in message.tags %}
+                    <section class="info-summary" role="alert">
+                        {{message|safe|linebreaks}}
+                    </section>
+                    {% endif %}
+
                     {% if "error" in message.tags %}
                     <section class="error-summary">
                         {% if "session_timeout" in message.tags %}
                         <h1 class="heading-medium">{% blocktrans %}Session timeout{% endblocktrans %}</h1>
                         <p>{% blocktrans %}Your session has expired, re-enter your details and try again.{% endblocktrans %}</p>
                         {% else %}
-                        {{ message|safe }}
+                        {{ message|safe|linebreaks }}
                         {% endif %}
                     </section>
                     {% endif %}

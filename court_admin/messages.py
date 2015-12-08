@@ -16,4 +16,8 @@ ERROR_MESSAGES = {
     "NEW_USERNAME_TAKEN": _("This username is already taken"),
     "FIRST_NAME_REQUIRED": _("Enter your first name"),
     "LAST_NAME_REQUIRED": _("Enter your last name"),
+    "INVITE_EMAIL_REQUIRED": _("Enter the user's email address"),
+    "INVITE_FIRST_NAME_REQUIRED": _("Enter the user's first name"),
+    "INVITE_LAST_NAME_REQUIRED": _("Enter the user's last name"),
+    "COURT_REQUIRED": _("Select the court this user can access"),
 }

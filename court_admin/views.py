@@ -8,11 +8,20 @@ from django.contrib.auth.models import User, Permission
 
 from apps.plea.models import Court, UsageStats
 from court_admin.decorators import court_staff_user_required, court_admin_user_required
-from court_admin.forms import InviteUserForm, EmailNotAvailable, RegistrationForm
+from court_admin.forms import InviteUserForm, EmailNotAvailable, RegistrationForm, PersonalDetailsForm
 
 
-class UsageStatsView(TemplateView):
-    template_name = "usage_data.html"
+class PersonalDetailsView(FormView):
+    template_name = "settings/personal_details.html"
+    form_class = PersonalDetailsForm
+
+    @method_decorator(court_staff_user_required)
+    def dispatch(self, *args, **kwargs):
+        return super(PersonalDetailsView, self).dispatch(*args, **kwargs)
+
+
+class DashboardView(TemplateView):
+    template_name = "dashboard/overview.html"
 
     def _get_formset(self, court, *args, **kwargs):
         usage_formset = modelformset_factory(
@@ -61,7 +70,7 @@ class UsageStatsView(TemplateView):
         kwargs["formset"] = self._get_formset(court)
         kwargs["selected_court"] = court
 
-        return super(UsageStatsView, self).get(request, *args, **kwargs)
+        return super(DashboardView, self).get(request, *args, **kwargs)
 
     def post(self, request, *args, **kwargs):
 
@@ -76,10 +85,10 @@ class UsageStatsView(TemplateView):
         kwargs["formset"] = formset
         kwargs["selected_court"] = court
 
-        return super(UsageStatsView, self).get(request, *args, **kwargs)
+        return super(DashboardView, self).get(request, *args, **kwargs)
 
     def get_context_data(self, **kwargs):
-        context = super(UsageStatsView, self).get_context_data(**kwargs)
+        context = super(DashboardView, self).get_context_data(**kwargs)
 
         context["courts"] = Court.objects.all()
 
@@ -87,11 +96,11 @@ class UsageStatsView(TemplateView):
 
     @method_decorator(court_staff_user_required)
     def dispatch(self, *args, **kwargs):
-        return super(UsageStatsView, self).dispatch(*args, **kwargs)
+        return super(DashboardView, self).dispatch(*args, **kwargs)
 
 
 class InviteUserView(FormView):
-    template_name = "court_registration/invite_user.html"
+    template_name = "users/invite_user.html"
     form_class = InviteUserForm
 
     def form_valid(self, form):
@@ -122,7 +131,7 @@ class InviteUserView(FormView):
 
 
 class RegisterView(TemplateView):
-    template_name = "court_registration/register.html"
+    template_name = "profile/register.html"
 
     def get(self, request, *args, **kwargs):
 
@@ -172,8 +181,8 @@ class RegisterView(TemplateView):
             return super(RegisterView, self).get(request, *args, **kwargs)
 
 
-class CourtAdminListView(TemplateView):
-    template_name = "court_user_list.html"
+class UsersView(TemplateView):
+    template_name = "users/users.html"
 
     def _get_users(self):
 
@@ -192,7 +201,7 @@ class CourtAdminListView(TemplateView):
 
         kwargs["users"] = self._get_users()
 
-        return super(CourtAdminListView, self).get(request, *args, **kwargs)
+        return super(UsersView, self).get(request, *args, **kwargs)
 
     def post(self, request, *args, **kwargs):
 
@@ -224,8 +233,8 @@ class CourtAdminListView(TemplateView):
 
             return redirect(request.path)
 
-        return super(CourtAdminListView, self).get(request, *args, **kwargs)
+        return super(UsersView, self).get(request, *args, **kwargs)
 
     @method_decorator(court_admin_user_required)
     def dispatch(self, *args, **kwargs):
-        return super(CourtAdminListView, self).dispatch(*args, **kwargs)
+        return super(UsersView, self).dispatch(*args, **kwargs)

@@ -1,0 +1,38 @@
+{% extends "base_court_admin_dashboard.html" %}
+
+{% load i18n %}
+{% load form_widgets %}
+
+{% block page_title %}{% blocktrans %}Personal details{% endblocktrans %} - {{ block.super }}{% endblock %}
+
+{% block dash_title %}Settings{% endblock %}
+
+{% block tabs_nav %}
+<nav class="tabs-menu">
+    <ul>
+        <li><a class="active" href="{% url "personal_details" %}">{% blocktrans %}Personal details{% endblocktrans %}</a></li>
+        <li><a href="{% url "password_change" %}">{% blocktrans %}Change password{% endblocktrans %}</a></li>
+    </ul>
+</nav>
+{% endblock tabs_nav %}
+
+{% block dash_content %}
+
+    <h2>Personal details</h2>
+
+    <form method="post" action="{{ request.path }}" autocomplete="off" novalidate>
+        {% csrf_token %}
+
+        {% std_field form.first_name %}
+
+        {% std_field form.last_name %}
+
+        {% std_field form.username %}
+
+        {% std_field form.email %}
+
+        <div class="form-submit">
+            <button class="button" type="submit">{% blocktrans %}Save{% endblocktrans %}</button>
+        </div>
+    </form>
+{% endblock dash_content %}

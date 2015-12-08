@@ -1,0 +1,19 @@
+{% extends "base_court_admin.html" %}
+
+{% load i18n %}
+
+{% block page_title %}{% blocktrans %}Personal details changed{% endblocktrans %} - {{ block.super }}{% endblock %}
+
+{% block page_content %}
+
+    <header class="success-header" role="alert">
+        <h1 class="ticked">{% blocktrans %}Personal details changed{% endblocktrans %}</h1>
+    </header>
+
+    <header class="content-header">
+        <p>{% blocktrans %}You have successfully changed your personal details.{% endblocktrans %}</p>
+
+        <a class="button" href="{% url "personal_details" %}">Go back</a>
+    </header>
+
+{% endblock %}

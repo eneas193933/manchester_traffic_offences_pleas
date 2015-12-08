@@ -1,10 +1,6 @@
 {% extends "base_court_admin.html" %}
 
 {% load i18n %}
-{% load form_widgets %}
-{% load debug %}
-
-{% block page_title %}{% blocktrans %}Change your password{% endblocktrans %} - {{ block.super }}{% endblock %}
 
 {% block page_content %}
 
@@ -25,21 +21,11 @@
     {% endif %}
 
     <header class="content-header">
-        <h1>{% blocktrans %}Change your password{% endblocktrans %}</h1>
+        <h1>{% block dash_title %}Dashboard{% endblock %}</h1>
     </header>
 
-    <form method="post" action="{{ request.path }}" autocomplete="off" novalidate>
-        {% csrf_token %}
+    {% block tabs_nav %}{% endblock %}
 
-        {% std_field form.old_password %}
+    {% block dash_content %}{% endblock %}
 
-        {% std_field form.new_password1 %}
-
-        {% std_field form.new_password2 %}
-
-        <div class="form-submit">
-            <button class="button" type="submit">{% blocktrans %}Submit{% endblocktrans %}</button>
-        </div>
-    </form>
-
-{% endblock %}
+{% endblock page_content %}
