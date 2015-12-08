@@ -31,7 +31,9 @@
             {% if user.is_authenticated %}
             <ul id="proposition-links">
                 <li><a{% if "/dashboard/" in request.path %} class="active"{% endif %} href="{% url "dashboard" %}">Dashboard</a></li>
+                {% if user.is_superuser %}
                 <li><a{% if "/users/" in request.path %} class="active"{% endif %} href="{% url "users" %}">Users</a></li>
+                {% endif %}
                 <li><a{% if "/settings/" in request.path %} class="active"{% endif %} href="{% url "personal_details" %}">Settings</a></li>
                 <li><a href="{% url "logout" %}">Sign out</a></li>
             </ul>

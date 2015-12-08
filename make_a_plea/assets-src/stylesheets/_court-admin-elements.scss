@@ -71,3 +71,163 @@
 
   }
 }
+
+
+.info-summary {
+  @extend .error-summary;
+  border-color: $green-50;
+  background-color: $green-25;
+}
+
+
+.filters {
+  label,
+  .form-control {
+    display: inline-block;
+    width: auto;
+    max-width: 100%;
+  }
+  @include media(desktop) {
+    @extend %contain-floats;
+
+    h3 {
+      margin-top: 0;
+      float: left;
+    }
+
+    p {
+      margin-top: 0;
+      float: right;
+    }
+  }
+}
+
+.form-group-inline {
+  label {
+    margin: 0 10px 0 0;
+    font-size: inherit;
+    font-weight: inherit;
+  }
+  @include media(desktop) {
+    label,
+    .form-control {
+      display: inline-block;
+      width: auto;
+      vertical-align: middle;
+    }
+  }
+}
+
+
+
+.figures-summary {
+  @extend %contain-floats;
+  padding: 10px 0;
+  margin: 0 0 2em;
+  border: 1px solid $grey-2;
+  background: $grey-4;
+
+  section {
+    padding: 0 10px;
+
+    @include media(desktop) {
+      float: left;
+      box-sizing: border-box;
+      width: 33.3333%;
+      border-right: 1px solid $grey-2;
+
+      &:last-child {
+        border-width: 0;
+      }
+    }
+
+    h3 {
+      margin-top: 0;
+      border-bottom: 1px solid $grey-2;
+    }
+  }
+
+  th, td {
+    width: 33.3333%;
+    padding: .25em 0;
+    border-width: 0;
+  }
+}
+
+
+.scroll-overflow {
+  overflow: scroll;
+  margin: 0 0 2em;
+}
+
+.table-form {
+  border: 1px solid $grey-2;
+  border-width: 1px 0 0 1px;
+
+  th {
+    background: $grey-4;
+  }
+
+  th,
+  td {
+    padding: .5em;
+    border: 1px solid $grey-2;
+    border-width: 0 1px 1px 0;
+    white-space: nowrap;
+
+    &:first-child {
+      padding-left: .5em;
+    }
+  }
+
+  .weekly-submissions {
+    @include bold-24();
+    padding: .25em;
+    border-right-width: 0;
+  }
+  .legend {
+    text-align: right;
+    vertical-align: middle;
+
+    .icon-incomplete {
+      margin-left: 10px;
+    }
+  }
+
+  .incomplete td {
+    background-color: $red-25;
+  }
+
+  .disabled td {
+    color: $grey-1;
+  }
+
+  .status {
+    text-align: center;
+  }
+
+  .form-control-inline {
+    width: 100%;
+    min-width: 4em;
+  }
+}
+
+
+.icon-complete,
+.icon-incomplete {
+  display: inline-block;
+  margin-top: -3px;
+  width: 20px;
+  height: 0;
+  padding: 20px 0 0;
+  overflow: hidden;
+  background-position: center center;
+  background-repeat: no-repeat;
+  vertical-align: middle;
+}
+.icon-complete {
+  background-image: file-url("court-admin-icons/complete.png");
+}
+.icon-incomplete {
+  background-image: file-url("court-admin-icons/incomplete.png");
+}

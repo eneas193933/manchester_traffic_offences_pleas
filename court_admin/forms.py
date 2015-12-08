@@ -227,7 +227,7 @@ class PersonalDetailsForm(forms.ModelForm):
                                              "is_email_hmcts": ERROR_MESSAGES["EMAIL_HMCTS_INVALID"]})
 
     class Meta:
-        model = User
+        model = CourtAdminProfile
         fields = ["first_name", "last_name", "email", "username"]
 
 

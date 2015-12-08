@@ -1,4 +1,5 @@
 from django.core.exceptions import PermissionDenied
+from django.db.models import Sum
 from django.shortcuts import redirect
 from django.views.generic import TemplateView, FormView
 from django.forms.models import modelformset_factory
@@ -38,6 +39,28 @@ class DashboardView(TemplateView):
 
         return usage_formset(*args, **form_kwargs)
 
+    def _get_totals(self, court):
+        stats = UsageStats.objects.filter(court=court)
+        totals = stats.aggregate(Sum("postal_responses"),
+                                 Sum("postal_guilty_pleas"),
+                                 Sum("postal_not_guilty_pleas"),
+                                 Sum("online_submissions"),
+                                 Sum("online_guilty_pleas"),
+                                 Sum("online_not_guilty_pleas"))
+
+        data = {"by_post": {"submissions": totals["postal_responses__sum"] or 0,
+                            "guilty": totals["postal_guilty_pleas__sum"] or 0,
+                            "not_guilty": totals["postal_not_guilty_pleas__sum"] or 0},
+                "online": {"submissions": totals["online_submissions__sum"] or 0,
+                           "guilty": totals["online_guilty_pleas__sum"] or 0,
+                           "not_guilty": totals["online_not_guilty_pleas__sum"] or 0}}
+
+        data.update({"totals": {"submissions": data["online"]["submissions"] + data["by_post"]["submissions"],
+                                "guilty": data["online"]["guilty"] + data["by_post"]["guilty"],
+                                "not_guilty": data["online"]["not_guilty"] + data["by_post"]["not_guilty"]}})
+
+        return data
+
     def get_selected_court(self, court_id=None):
 
         user = self.request.user
@@ -69,6 +92,7 @@ class DashboardView(TemplateView):
 
         kwargs["formset"] = self._get_formset(court)
         kwargs["selected_court"] = court
+        kwargs["totals"] = self._get_totals(court)
 
         return super(DashboardView, self).get(request, *args, **kwargs)
 
@@ -80,10 +104,11 @@ class DashboardView(TemplateView):
 
         if formset.is_valid():
             formset.save()
-            messages.info(request, "Court statistics have been updated.")
+            messages.success(request, "Court statistics have been updated.")
 
         kwargs["formset"] = formset
         kwargs["selected_court"] = court
+        kwargs["totals"] = self._get_totals(court)
 
         return super(DashboardView, self).get(request, *args, **kwargs)
 

@@ -21,7 +21,12 @@ GOV.UK Toolkit/Template overrides
 	}
 
 	a {
+		padding: .5em 0;
 		display: block;
+
+		@include media(desktop) {
+			padding: 0;
+		}
 	}
 }
 

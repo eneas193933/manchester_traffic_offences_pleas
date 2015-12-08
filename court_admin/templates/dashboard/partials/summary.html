@@ -1,0 +1,47 @@
+<article class="figures-summary">
+    <section class="totals">
+        <h3>Totals</h3>
+        <table>
+            <tr>
+                <th>Total</th>
+                <th>Guilty</th>
+                <th>Not guilty</th>
+            </tr>
+            <tr>
+                <td>{{ data.totals.submissions }}</td>
+                <td>{{ data.totals.guilty }}</td>
+                <td>{{ data.totals.not_guilty }}</td>
+            </tr>
+        </table>
+    </section>
+    <section class="by-post">
+        <h3>By post</h3>
+        <table>
+            <tr>
+                <th>Total</th>
+                <th>Guilty</th>
+                <th>Not guilty</th>
+            </tr>
+            <tr>
+                <td>{{ data.by_post.submissions }}</td>
+                <td>{{ data.by_post.guilty }}</td>
+                <td>{{ data.by_post.not_guilty }}</td>
+            </tr>
+        </table>
+    </section>
+    <section class="online">
+        <h3>Online</h3>
+        <table>
+            <tr>
+                <th>Total</th>
+                <th>Guilty</th>
+                <th>Not guilty</th>
+            </tr>
+            <tr>
+                <td>{{ data.online.submissions }}</td>
+                <td>{{ data.online.guilty }}</td>
+                <td>{{ data.online.not_guilty }}</td>
+            </tr>
+        </table>
+    </section>
+</article>
