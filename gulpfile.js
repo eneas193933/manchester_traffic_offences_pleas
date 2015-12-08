@@ -52,7 +52,7 @@ gulp.task('sass', function() {
         'node_modules/govuk_frontend_toolkit/stylesheets/',
         'make_a_plea/assets-src/stylesheets/'
       ]
-    }))
+    }).on('error', sass.logError))
     .pipe(sourcemaps.write('../maps'))
     .pipe(gulp.dest(paths.dest_dir + 'stylesheets'));
 });
