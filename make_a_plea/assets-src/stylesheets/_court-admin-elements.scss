@@ -1,0 +1,73 @@
+.dashboard-menu {
+  ul {
+    margin: 0;
+    padding: 0;
+    border-bottom: 1px solid $grey-2;
+  }
+
+  li {
+    margin: 0;
+    list-style: none;
+  }
+
+  a {
+    display: block;
+    padding: .5em 0;
+    border: 1px solid $grey-2;
+    border-width: 1px 0 0;
+    text-decoration: none;
+
+    &.active {
+      font-weight: bold;
+    }
+  }
+}
+
+.tabs-menu {
+  ul {
+    @extend %contain-floats;
+
+    margin: 0;
+    padding: 0;
+    border-bottom: 1px solid $grey-2;
+  }
+
+  li {
+    margin: 0;
+    list-style: none;
+
+    @include media(tablet) {
+      float: left;
+
+      &:first-child a {
+        border-left-width: 1px;
+      }
+    }
+  }
+
+  a {
+    display: block;
+    padding: .5em 0;
+    border: 1px solid $grey-2;
+    border-width: 1px 0 0;
+    text-decoration: none;
+
+    &.active {
+      font-weight: bold;
+    }
+
+    @include media(tablet) {
+      padding: .5em 1em;
+      border-width: 1px 1px 0 0;
+      background: $grey-4;
+
+      &.active {
+        margin-bottom: -1px;
+        border-bottom: 1px solid white;
+        background: white;
+      }
+    }
+
+
+  }
+}

@@ -10,20 +10,18 @@ GOV.UK Toolkit/Template overrides
 	}
 }
 
-#global-header .header-proposition {
-	@include media(tablet) {
-		padding-top: 8px;
+#global-header .header-proposition #proposition-links li {
+	float: none;
+	width: auto;
+	margin-bottom: 0;
+	list-style: none;
+
+	@include media(desktop) {
+		float: left;
 	}
 
-	a#proposition-name {
-		display: inline-block;
-		line-height: 1;
-
-		&:hover,
-		&:focus {
-			border-bottom: 1px solid white;
-			text-decoration: none;
-		}
+	a {
+		display: block;
 	}
 }
 
