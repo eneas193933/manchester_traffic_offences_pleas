@@ -25,10 +25,10 @@
 {% block proposition_header %}
     <div class="header-proposition">
       <div class="content">
-        {% if user.is_authenticated %}<a href="#proposition-links" class="js-header-toggle menu">Menu</a>{% endif %}
+        {% if user.is_authenticated and user.is_active %}<a href="#proposition-links" class="js-header-toggle menu">Menu</a>{% endif %}
         <nav id="proposition-menu">
             <a href="{% url "dashboard" %}" id="proposition-name">{% blocktrans %}Make a Plea court administration{% endblocktrans %}</a>
-            {% if user.is_authenticated %}
+            {% if user.is_authenticated and user.is_active %}
             <ul id="proposition-links">
                 <li><a{% if "/dashboard/" in request.path %} class="active"{% endif %} href="{% url "dashboard" %}">Dashboard</a></li>
                 {% if user.is_superuser %}

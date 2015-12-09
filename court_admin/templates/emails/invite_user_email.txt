@@ -1,10 +1,11 @@
 Hello {{ name }},
 
-You've been invited to the MaP court admin system.
+You have been invited to the Make a Plea court administration system.
 
-Click the link below, or copy and paste it into your browser, to complete your registration
+To complete your registration, click the link below, or copy and paste it into
+your browser:
 
-{% if use_https %}https{% else %}http{% endif %}://{{ domain }}{{ invite_url }}
+{% if use_https %}https{% else %}http{% endif %}://{{ host }}{{ invite_url }}
 
 Regards,
 

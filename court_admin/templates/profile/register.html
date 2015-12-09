@@ -32,8 +32,8 @@
     <form method="post" action="{{ request.path }}" autocomplete="off" novalidate>
 
         <div class="form-header">
-            <h2><span>{% blocktrans %}Your court/region:{% endblocktrans %}</span>
-                {{ court_name }}
+            <h2><span>{% blocktrans %}Your court:{% endblocktrans %}</span>
+                {{ user.courtadminprofile.court.court_name }}
             </h2>
         </div>
 

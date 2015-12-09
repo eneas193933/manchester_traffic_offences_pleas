@@ -133,7 +133,7 @@ class InviteUserView(FormView):
         try:
             user = form.create_user_from_form(form)
         except EmailNotAvailable:
-            messages.error(self.request, "Error - a user with that email already exists.")
+            messages.error(self.request, "A user with that email already exists.")
 
             return self.render_to_response(self.get_context_data(form=form))
 
@@ -144,7 +144,7 @@ class InviteUserView(FormView):
                 "use_https": self.request.is_secure()
             }
             form.send_invite_email(user, **context)
-            messages.info(self.request, "An invitation has been sent to {}".format(user.email))
+            messages.success(self.request, "An invitation has been sent to {}".format(user.email))
 
         self.success_url = self.request.path
 
@@ -196,6 +196,7 @@ class RegisterView(TemplateView):
 
         form = RegistrationForm(request.POST)
 
+        kwargs["user"] = user
         kwargs["form"] = form
 
         if form.is_valid():

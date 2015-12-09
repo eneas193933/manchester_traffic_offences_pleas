@@ -203,6 +203,11 @@ class RegistrationForm(forms.Form):
         user.is_active = True
         user.save()
 
+    def __init__(self, *args, **kwargs):
+        super(RegistrationForm, self).__init__(*args, **kwargs)
+        fields_order = ["username", "first_name", "last_name", "password1", "password2"]
+        self.fields = reorder_fields(self.fields, fields_order)
+
 
 class PersonalDetailsForm(forms.ModelForm):
 
