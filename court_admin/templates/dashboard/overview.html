@@ -25,7 +25,9 @@
 
         <p class="form-group-inline"><label for="select-month">Month:</label>
             <select id="select-month" class="form-control" name="month">
-                <option value="1">January</option>
+                {% for id, val in date_list %}
+                <option value="{{ id }}">{{ val }}</option>
+                {% endfor %}
             </select></p>
     </section>
 

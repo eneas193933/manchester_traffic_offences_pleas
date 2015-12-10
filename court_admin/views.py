@@ -1,3 +1,6 @@
+import calendar
+import datetime as dt
+
 from django.core.exceptions import PermissionDenied
 from django.core.urlresolvers import reverse
 from django.db.models import Sum
@@ -52,7 +55,22 @@ class UsernameReminderView(FormView):
 class DashboardView(TemplateView):
     template_name = "dashboard/overview.html"
 
-    def _get_formset(self, court, *args, **kwargs):
+    def _get_date_filter(self, year, month):
+
+        _, last_date = calendar.monthrange(year, month)
+
+        return {
+            "start_date__gte": dt.date(year, month, 1),
+            "start_date__lte": dt.date(year, month, last_date)
+        }
+
+    def _get_formset(self, court, date_filter=None, *args, **kwargs):
+
+        if date_filter:
+            stats = UsageStats.objects.filter(**date_filter)
+        else:
+            stats = UsageStats.objects.all()
+
         usage_formset = modelformset_factory(
             UsageStats,
             fields=("postal_requisitions", "postal_guilty_pleas", "postal_not_guilty_pleas"),
@@ -60,15 +78,47 @@ class DashboardView(TemplateView):
 
         form_kwargs = {
             "initial": 0,
-            "queryset": UsageStats.objects.filter(court=court)
+            "queryset": stats
         }
 
         form_kwargs.update(kwargs)
 
         return usage_formset(*args, **form_kwargs)
 
-    def _get_totals(self, court):
-        stats = UsageStats.objects.filter(court=court)
+    def _get_month_list(self, court):
+
+        months = []
+
+        curr_date = court.live_date
+        today = dt.date.today()
+
+        while curr_date < today:
+
+            months.append(
+                [
+                    "{}/{}".format(curr_date.month, curr_date.year),
+                    curr_date.strftime("%B %Y")
+                ])
+
+            year, month, day = curr_date.year, curr_date.month + 1, curr_date.day
+
+            if month > 12:
+                year += 1
+                month %= 12
+
+            curr_date = dt.date(year, month, day)
+
+        return months
+
+    def _get_totals(self, court, date_filter=None):
+
+        if date_filter:
+            stats = UsageStats.objects.filter(**date_filter)
+        else:
+            stats = UsageStats.objects.all()
+
+        stats = stats.filter(court=court)
+
         totals = stats.aggregate(Sum("postal_responses"),
                                  Sum("postal_guilty_pleas"),
                                  Sum("postal_not_guilty_pleas"),
@@ -115,18 +165,29 @@ class DashboardView(TemplateView):
 
         # the following would happen via a cron task to keep the dashboard updated
         # with online data
+
+        month, year = kwargs.get("month", None), kwargs.get("year", None)
+
+        if month and year:
+            date_filter = self._get_date_filter(int(year), int(month))
+        else:
+            date_filter = None
+
         court = self.get_selected_court(kwargs.get("court_id", None))
+        kwargs["date_list"] = self._get_month_list(court)
+
         UsageStats.objects.calculate_weekly_stats(court)
 
-        kwargs["formset"] = self._get_formset(court)
+        kwargs["formset"] = self._get_formset(court, date_filter=date_filter)
         kwargs["selected_court"] = court
-        kwargs["totals"] = self._get_totals(court)
+        kwargs["totals"] = self._get_totals(court, date_filter=date_filter)
 
         return super(DashboardView, self).get(request, *args, **kwargs)
 
     def post(self, request, *args, **kwargs):
 
         court = self.get_selected_court(kwargs.get("court_id", None))
+        kwargs["date_list"] = self._get_month_list(court)
 
         formset = self._get_formset(court, request.POST)
 

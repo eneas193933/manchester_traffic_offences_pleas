@@ -20,7 +20,11 @@ urlpatterns = patterns("",
 
     url(r"^dashboard/$", DashboardView.as_view(),
         name="dashboard"),
+    url(r"^dashboard/(?P<year>\d+)/(?P<month>\d+)$", DashboardView.as_view(),
+        name="dashboard"),
     url(r"^dashboard/(?P<court_id>\d+)/$", DashboardView.as_view(),
+        name="dashboard"),
+    url(r"^dashboard/(?P<court_id>\d+)/(?P<year>\d+)/(?P<month>\d+)$", DashboardView.as_view(),
         name="dashboard"),
 
     url(r"^users/$", UsersView.as_view(), name="users"),
