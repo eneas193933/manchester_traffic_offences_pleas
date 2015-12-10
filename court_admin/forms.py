@@ -2,6 +2,7 @@ import random
 import string
 
 from django import forms
+from django.conf import settings
 from django.core.urlresolvers import reverse
 from django.db import IntegrityError
 from django.contrib.auth.models import User, Permission
@@ -100,8 +101,9 @@ class UsernameReminderForm(forms.Form):
 
         message = render_to_string("emails/username_reminder.txt", context)
         subject = render_to_string("emails/username_reminder_subject.txt", context)
+        from_email = getattr(settings, "COURT_ADMIN_EMAIL_FROM", "lyndon.garvey@digital.justice.gov.uk")
 
-        user.email_user(subject, message, from_email="lyndon.garvey@digital.justice.gov.uk", fail_silently=False)
+        user.email_user(subject, message, from_email=from_email, fail_silently=False)
 
 
 class InviteUserForm(forms.Form):
@@ -185,8 +187,9 @@ class InviteUserForm(forms.Form):
 
         message = render_to_string("emails/invite_user.txt", context)
         subject = render_to_string("emails/invite_user_subject.txt", context)
+        from_email = getattr(settings, "COURT_ADMIN_EMAIL_FROM", "lyndon.garvey@digital.justice.gov.uk")
 
-        user.email_user(subject, message, from_email="lyndon.garvey@digital.justice.gov.uk", fail_silently=False)
+        user.email_user(subject, message, from_email=from_email, fail_silently=False)
 
 
 class RegistrationForm(forms.Form):

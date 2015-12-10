@@ -34,7 +34,10 @@ INSTALLED_APPS = [
 LOGIN_REDIRECT_URL = "/"
 LOGIN_URL = "/sign-in/"
 
-VALID_HMCTS_EMAIL_DOMAINS = []
+VALID_HMCTS_EMAIL_DOMAINS = ["hmcts.gsi.gov.uk",
+                             "digital.justice.gov.uk"]
+
+COURT_ADMIN_EMAIL_FROM = "makeaplea@digital.justice.gov.uk"
 
 PASSWORD_MIN_LENGTH = 8
 
