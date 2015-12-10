@@ -54,7 +54,7 @@ class CourtAdminAuthenticationForm(AuthenticationForm):
 
     error_messages = {
         "invalid_login": "INVALID_LOGIN",
-        "inactive": "INACTIVE_USER"
+        "inactive": "INVALID_LOGIN"
     }
 
 
@@ -78,6 +78,30 @@ class CourtAdminSetPasswordForm(SetPasswordForm):
     error_messages = {
         "password_mismatch": ERROR_MESSAGES["PASSWORD_MISMATCH"]
     }
+
+
+class UsernameReminderForm(forms.Form):
+
+    email = forms.EmailField(label=_("Email address"),
+                             help_text=_("Your HMCTS email address."),
+                             max_length=254,
+                             validators=[is_email_hmcts],
+                             error_messages={"required": ERROR_MESSAGES["EMAIL_REQUIRED"],
+                                             "invalid": ERROR_MESSAGES["EMAIL_INVALID"],
+                                             "is_email_hmcts": ERROR_MESSAGES["EMAIL_HMCTS_INVALID"]})
+
+    @staticmethod
+    def send_username_reminder_email(user, **extra_context):
+        context = {
+            "login_url": reverse("login"),
+            "username": user.username
+        }
+        context.update(extra_context)
+
+        message = render_to_string("emails/username_reminder.txt", context)
+        subject = render_to_string("emails/username_reminder_subject.txt", context)
+
+        user.email_user(subject, message, from_email="lyndon.garvey@digital.justice.gov.uk", fail_silently=False)
 
 
 class InviteUserForm(forms.Form):
@@ -159,8 +183,8 @@ class InviteUserForm(forms.Form):
 
         context.update(extra_context)
 
-        message = render_to_string("emails/invite_user_email.txt", context)
-        subject = render_to_string("emails/invite_user_email_subject.txt", context)
+        message = render_to_string("emails/invite_user.txt", context)
+        subject = render_to_string("emails/invite_user_subject.txt", context)
 
         user.email_user(subject, message, from_email="lyndon.garvey@digital.justice.gov.uk", fail_silently=False)
 
@@ -227,7 +251,7 @@ class PersonalDetailsForm(forms.ModelForm):
                              help_text=_("Your HMCTS email address."),
                              max_length=254,
                              validators=[is_email_hmcts],
-                             error_messages={"required": ERROR_MESSAGES["INVITE_EMAIL_REQUIRED"],
+                             error_messages={"required": ERROR_MESSAGES["EMAIL_REQUIRED"],
                                              "invalid": ERROR_MESSAGES["EMAIL_INVALID"],
                                              "is_email_hmcts": ERROR_MESSAGES["EMAIL_HMCTS_INVALID"]})
 

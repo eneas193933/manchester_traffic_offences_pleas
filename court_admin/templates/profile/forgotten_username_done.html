@@ -1,0 +1,19 @@
+{% extends "base_court_admin.html" %}
+
+{% load i18n %}
+
+{% block page_title %}{% blocktrans %}Details submitted{% endblocktrans %} - {{ block.super }}{% endblock %}
+
+{% block page_content %}
+
+    <header class="success-header" role="alert">
+        <h1 class="ticked">{% blocktrans %}Submission successful{% endblocktrans %}</h1>
+    </header>
+
+    <header class="content-header">
+        <p>{% blocktrans %}We have sent a username reminder to your registered HMCTS email address.{% endblocktrans %}</p>
+
+        <a class="button" href="{% url 'login' %}">Go to sign in</a>
+    </header>
+
+{% endblock %}

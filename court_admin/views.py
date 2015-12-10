@@ -1,4 +1,5 @@
 from django.core.exceptions import PermissionDenied
+from django.core.urlresolvers import reverse
 from django.db.models import Sum
 from django.shortcuts import redirect
 from django.views.generic import TemplateView, FormView
@@ -9,7 +10,11 @@ from django.contrib.auth.models import User, Permission
 
 from apps.plea.models import Court, UsageStats
 from court_admin.decorators import court_staff_user_required, court_admin_user_required
-from court_admin.forms import InviteUserForm, EmailNotAvailable, RegistrationForm, PersonalDetailsForm
+from court_admin.forms import (InviteUserForm,
+                               EmailNotAvailable,
+                               RegistrationForm,
+                               PersonalDetailsForm,
+                               UsernameReminderForm)
 
 
 class PersonalDetailsView(FormView):
@@ -19,6 +24,29 @@ class PersonalDetailsView(FormView):
     @method_decorator(court_staff_user_required)
     def dispatch(self, *args, **kwargs):
         return super(PersonalDetailsView, self).dispatch(*args, **kwargs)
+
+
+class UsernameReminderView(FormView):
+    template_name = "profile/forgotten_username.html"
+    form_class = UsernameReminderForm
+
+    def form_valid(self, form):
+
+        self.success_url = reverse("forgotten_username_done")
+
+        try:
+            user = User.objects.get(email=form.data["email"], is_active=True)
+        except User.DoesNotExist:
+            pass
+
+        if user:
+            context = {
+                "host": self.request.get_host(),
+                "use_https": self.request.is_secure()
+            }
+            form.send_username_reminder_email(user, **context)
+
+        return super(UsernameReminderView, self).form_valid(form)
 
 
 class DashboardView(TemplateView):
@@ -248,14 +276,14 @@ class UsersView(TemplateView):
                     "use_https": self.request.is_secure()
                 }
                 InviteUserForm.send_invite_email(user, **context)
-                messages.info(request, "Invite resent")
+                messages.success(request, "Invitation resent")
 
             return redirect(request.path)
 
         elif action == "delete":
             if self._can_modify_user(user):
                 user.delete()
-                messages.info(request, "Delete")
+                messages.success(request, "User deleted")
 
             return redirect(request.path)
 

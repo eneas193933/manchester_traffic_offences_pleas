@@ -11,6 +11,7 @@ from views import (DashboardView,
                    UsersView,
                    InviteUserView,
                    RegisterView,
+                   UsernameReminderView,
                    PersonalDetailsView)
 
 
@@ -39,12 +40,17 @@ urlpatterns = patterns("",
     url(r"^forgotten-password/$", auth_views.password_reset,
         {"template_name": "profile/password_reset_form.html",
          "password_reset_form": CourtAdminPasswordResetForm,
-         "email_template_name": "emails/password_reset_email.txt",
+         "email_template_name": "emails/password_reset.txt",
          "subject_template_name": "emails/password_reset_subject.txt"},
         name="password_reset"),
     url(r"^forgotten-password/done/$", auth_views.password_reset_done,
         {"template_name": "profile/password_reset_done.html"},
         name="password_reset_done"),
+
+    url(r"^forgotten-username/$", UsernameReminderView.as_view(),
+        name="forgotten_username"),
+    url(r"^forgotten-username/done/$", TemplateView.as_view(template_name="profile/forgotten_username_done.html"),
+        name="forgotten_username_done"),
 
     url(r"^reset-password/(?P<uidb64>[0-9A-Za-z_\-]+)/(?P<token>[0-9A-Za-z]{1,13}-[0-9A-Za-z]{1,20})/$",
         auth_views.password_reset_confirm,
