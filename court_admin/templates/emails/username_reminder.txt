@@ -1,0 +1,15 @@
+Hello,
+
+You have requested a username reminder for the Make a Plea court
+administration.
+
+Your username is: {{username}}
+
+To login, click the link below, or copy and paste it into
+your browser:
+
+{% if use_https %}https{% else %}http{% endif %}://{{ host }}{{ login_url }}
+
+Regards,
+
+Make a Plea

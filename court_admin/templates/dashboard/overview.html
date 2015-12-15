@@ -1,0 +1,83 @@
+{% extends "base_court_admin_dashboard.html" %}
+
+{% load i18n %}
+{% load widget_tweaks %}
+
+{% block page_title %}{% blocktrans %}Overview{% endblocktrans %} - {{ block.super }}{% endblock %}
+
+{% block dash_title %}Dashboard{% endblock %}
+
+{% block dash_content %}
+
+    <section class="filters">
+        {% if user.is_superuser %}
+        <h3 class="form-group-inline"><label for="select-court">Court:</label>
+            <select id="select-court" class="form-control" name="court" data-auto-refresh>
+                {% for court in courts %}
+                <option value="{% url 'dashboard' court_id=court.id %}" {% if selected_court == court %}selected="selected" {% endif %}>
+                    {{ court.court_name }}
+                </option>
+                {% endfor %}
+            </select></h3>
+        {% else %}
+        <h3>{{ selected_court.court_name }}</h3>
+        {% endif %}</h3>
+
+        <p class="form-group-inline"><label for="select-month">Month:</label>
+            <select id="select-month" class="form-control" name="month">
+                {% for id, val in date_list %}
+                <option value="{{ id }}">{{ val }}</option>
+                {% endfor %}
+            </select></p>
+    </section>
+
+    {% include "dashboard/partials/summary.html" with data=totals %}
+
+    <form method="post" action="{{ request.path }}" autocomplete="off" novalidate>
+        {% csrf_token %}
+
+        {{ formset.management_form }}
+
+        <div class="scroll-overflow">
+            <table class="table-form">
+                <tr>
+                    <th class="weekly-submissions" colspan="4">Weekly submissions</th>
+                    <th class="legend" colspan="4"><span class="icon-complete">Complete</span> Complete <span class="icon-incomplete">Incomplete</span> Incomplete</th>
+                </tr>
+                <tr>
+                    <th rowspan="2">Week start date</th>
+                    <th colspan="3">By post</th>
+                    <th colspan="3">Online</th>
+                    <th class="status" rowspan="2">Status</th>
+                </tr>
+                <tr>
+                    <th>Submissions</th>
+                    <th>Guilty</th>
+                    <th>Not guilty</th>
+                    <th>Submissions</th>
+                    <th>Guilty</th>
+                    <th>Not guilty</th>
+                </tr>
+                {% for form in formset %}
+                {% with data=form.instance %}
+                <tr{% if data.not_yet_available %} class="disabled"{% elif not data.has_court_data %} class="incomplete"{% endif %}>
+                    <td>{{ form.id }}{{ data.start_date|date:"d M Y" }}</td>
+                    <td>{{ form.postal_requisitions|attr:"class:form-control-inline"|attr:"pattern:[0-9]*"|attr:"maxlength:10"|attr:"type:tel"|attr:"size:6" }}</td>
+                    <td>{{ form.postal_guilty_pleas|attr:"class:form-control-inline"|attr:"pattern:[0-9]*"|attr:"maxlength:10"|attr:"type:tel"|attr:"size:6" }}</td>
+                    <td>{{ form.postal_not_guilty_pleas|attr:"class:form-control-inline"|attr:"pattern:[0-9]*"|attr:"maxlength:10"|attr:"type:tel"|attr:"size:6" }}</td>
+                    <td>{{ data.online_submissions }}</td>
+                    <td>{{ data.online_guilty_pleas }}</td>
+                    <td>{{ data.online_not_guilty_pleas }}</td>
+                    <td class="status">{% if data.not_yet_available %}-{% elif data.has_court_data %}<span class="icon-complete">Complete</span>{% else %}<span class="icon-incomplete">Incomplete</span>{% endif %}</td>
+                </tr>
+                {% endwith %}
+                {% endfor %}
+            </table>
+        </div>
+
+        <div class="form-submit">
+            <button type="submit" class="button">Save</button>
+        </div>
+    </form>
+
+{% endblock %}

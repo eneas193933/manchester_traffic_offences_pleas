@@ -2,9 +2,8 @@
 
 {% load i18n %}
 {% load form_widgets %}
-{% load debug %}
 
-{% block page_title %}{% blocktrans %}Change your password{% endblocktrans %} - {{ block.super }}{% endblock %}
+{% block page_title %}{% blocktrans %}Forgotten username{% endblocktrans %} - {{ block.super }}{% endblock %}
 
 {% block page_content %}
 
@@ -25,21 +24,21 @@
     {% endif %}
 
     <header class="content-header">
-        <h1>{% blocktrans %}Change your password{% endblocktrans %}</h1>
+        <h1>{% blocktrans %}Forgotten username{% endblocktrans %}</h1>
+
+        <p>Enter your registered HMCTS email address below and we will email you a username reminder.</p>
     </header>
 
     <form method="post" action="{{ request.path }}" autocomplete="off" novalidate>
         {% csrf_token %}
 
-        {% std_field form.old_password %}
-
-        {% std_field form.new_password1 %}
-
-        {% std_field form.new_password2 %}
+        {% std_field form.email %}
 
         <div class="form-submit">
             <button class="button" type="submit">{% blocktrans %}Submit{% endblocktrans %}</button>
         </div>
     </form>
+
+    <p><a href="{% url "login" %}">Back to sign in</a></p>
 
 {% endblock %}

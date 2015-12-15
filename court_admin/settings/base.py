@@ -32,9 +32,12 @@ INSTALLED_APPS = [
 
 # for court-admin - may need to be moved to its own settings file when we figure out whwere the app will live
 LOGIN_REDIRECT_URL = "/"
-LOGIN_URL = "/login/"
+LOGIN_URL = "/sign-in/"
 
-VALID_HMCTS_EMAIL_DOMAINS = []
+VALID_HMCTS_EMAIL_DOMAINS = ["hmcts.gsi.gov.uk",
+                             "digital.justice.gov.uk"]
+
+COURT_ADMIN_EMAIL_FROM = "makeaplea@digital.justice.gov.uk"
 
 PASSWORD_MIN_LENGTH = 8
 

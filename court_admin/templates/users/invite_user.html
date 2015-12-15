@@ -1,0 +1,41 @@
+{% extends "base_court_admin_dashboard.html" %}
+
+{% load i18n %}
+{% load form_widgets %}
+
+{% block page_title %}{% blocktrans %}Invite user{% endblocktrans %} - {{ block.super }}{% endblock %}
+
+{% block dash_title %}Users{% endblock %}
+
+{% block tabs_nav %}
+<nav class="tabs-menu">
+    <ul>
+        <li><a href="{% url "users" %}">{% blocktrans %}All users{% endblocktrans %}</a></li>
+        <li><a class="active" href="{% url "invite_user" %}">{% blocktrans %}Invite user{% endblocktrans %}</a></li>
+    </ul>
+</nav>
+{% endblock tabs_nav %}
+
+{% block dash_content %}
+
+    <h2>{% blocktrans %}Invite a user{% endblocktrans %}</h2>
+
+    <p>{% blocktrans %}Use this form to send an invitation for a new user to start using the court administration.{% endblocktrans %}</p>
+
+    <form method="post" action="{{ request.path }}" autocomplete="off" novalidate>
+        {% csrf_token %}
+
+        {% std_field form.email %}
+
+        {% std_field form.first_name %}
+
+        {% std_field form.last_name %}
+
+        {% std_field form.court %}
+
+        <div class="form-submit">
+            <button class="button" type="submit">{% blocktrans %}Send invitation{% endblocktrans %}</button>
+        </div>
+    </form>
+
+{% endblock %}

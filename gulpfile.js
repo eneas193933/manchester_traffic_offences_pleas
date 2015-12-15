@@ -22,6 +22,7 @@ var paths = {
     'node_modules/govuk_frontend_toolkit/stylesheets/**/*.scss'
   ],
   scripts: 'make_a_plea/assets-src/javascripts/application.js',
+  court_admin_scripts: 'make_a_plea/assets-src/javascripts/court-admin.js',
   vendor_scripts: 'make_a_plea/assets-src/javascripts/vendor/**/*.js',
   test_scripts: 'make_a_plea/assets-src/tests/**/*.js',
   images: 'make_a_plea/assets-src/images/**/*'
@@ -52,7 +53,7 @@ gulp.task('sass', function() {
         'node_modules/govuk_frontend_toolkit/stylesheets/',
         'make_a_plea/assets-src/stylesheets/'
       ]
-    }))
+    }).on('error', sass.logError))
     .pipe(sourcemaps.write('../maps'))
     .pipe(gulp.dest(paths.dest_dir + 'stylesheets'));
 });
@@ -74,6 +75,20 @@ gulp.task('js', function() {
   gulp
     .src(paths.vendor_scripts)
     .pipe(gulp.dest(paths.dest_dir + 'javascripts/vendor'));
+});
+
+// default js task
+gulp.task('courtjs', function() {
+  // create concatenated court admin js file
+  gulp
+    .src(paths.court_admin_scripts)
+    .pipe(include())
+      .on('error', console.log)
+    .pipe(sourcemaps.init())
+    .pipe(concat('court-admin.js'))
+    .pipe(uglify())
+    .pipe(sourcemaps.write('../maps'))
+    .pipe(gulp.dest(paths.dest_dir + 'javascripts'));
 });
 
 // jshint
@@ -106,7 +121,7 @@ gulp.task('images', function() {
 // setup watches
 gulp.task('watch', function() {
   gulp.watch(paths.styles, ['sass']);
-  gulp.watch(paths.src_dir + 'javascripts/**/*.js', ['lint', 'js']);
+  gulp.watch(paths.src_dir + 'javascripts/**/*.js', ['lint', 'js', 'courtjs']);
   gulp.watch(paths.images, ['images']);
 });
 
@@ -114,5 +129,5 @@ gulp.task('watch', function() {
 gulp.task('default', ['build']);
 // run build
 gulp.task('build', function() {
-  runSequence('clean', 'healthcheck', ['lint', 'js', 'images', 'sass']);
+  runSequence('clean', 'healthcheck', ['lint', 'js', 'courtjs', 'images', 'sass']);
 });

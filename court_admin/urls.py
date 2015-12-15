@@ -3,62 +3,74 @@ from __future__ import unicode_literals
 from django.conf.urls import patterns, url
 from django.contrib.auth import views as auth_views
 
-from django.views.generic import TemplateView
+from django.views.generic import TemplateView, RedirectView
 from court_admin.forms import (CourtAdminAuthenticationForm,
                                CourtAdminPasswordResetForm,
                                CourtAdminPasswordChangeForm)
-from views import UsageStatsView, InviteUserView, CourtAdminListView, RegisterView
+from views import (DashboardView,
+                   UsersView,
+                   InviteUserView,
+                   RegisterView,
+                   UsernameReminderView,
+                   PersonalDetailsView)
 
 
 urlpatterns = patterns("",
-    url(r"^$", UsageStatsView.as_view(),
-        name="usage_stats"),
+    url(r"^$", RedirectView.as_view(pattern_name="dashboard", permanent=True)),
 
-    url(r"^(?P<court_id>\d+)/$", UsageStatsView.as_view(),
-        name="usage_stats"),
+    url(r"^dashboard/$", DashboardView.as_view(),
+        name="dashboard"),
+    url(r"^dashboard/(?P<year>\d+)/(?P<month>\d+)$", DashboardView.as_view(),
+        name="dashboard"),
+    url(r"^dashboard/(?P<court_id>\d+)/$", DashboardView.as_view(),
+        name="dashboard"),
+    url(r"^dashboard/(?P<court_id>\d+)/(?P<year>\d+)/(?P<month>\d+)$", DashboardView.as_view(),
+        name="dashboard"),
 
-    url(r"^invite-users/$", InviteUserView.as_view(), name="invite_users"),
-
-    url(r"^users/$", CourtAdminListView.as_view(), name="court_admin_list"),
+    url(r"^users/$", UsersView.as_view(), name="users"),
+    url(r"^users/invite/$", InviteUserView.as_view(), name="invite_user"),
 
     url(r"^register/(?P<uidb64>[0-9A-Za-z_\-]+)/(?P<token>[0-9A-Za-z]{1,13}-[0-9A-Za-z]{1,20})/$", RegisterView.as_view(), name="register"),
-    url(r"^register/done/$", TemplateView.as_view(template_name="court_registration/register_done.html"), name="register_done"),
+    url(r"^register/done/$", TemplateView.as_view(template_name="profile/register_done.html"), name="register_done"),
 
-    url(r'^login/$', auth_views.login,
-        {'template_name': 'court_registration/login.html',
-         'authentication_form': CourtAdminAuthenticationForm},
-        name='login'),
+    url(r"^sign-in/$", auth_views.login,
+        {"template_name": "profile/login.html",
+         "authentication_form": CourtAdminAuthenticationForm},
+        name="login"),
+    url(r"^sign-out/$", auth_views.logout_then_login,
+        {"login_url": "/sign-in/"},
+        name="logout"),
 
-    url(r'^logout/$', auth_views.logout_then_login,
-        {"login_url": "/login/"},
-        name='logout'),
+    url(r"^forgotten-password/$", auth_views.password_reset,
+        {"template_name": "profile/password_reset_form.html",
+         "password_reset_form": CourtAdminPasswordResetForm,
+         "email_template_name": "emails/password_reset.txt",
+         "subject_template_name": "emails/password_reset_subject.txt"},
+        name="password_reset"),
+    url(r"^forgotten-password/done/$", auth_views.password_reset_done,
+        {"template_name": "profile/password_reset_done.html"},
+        name="password_reset_done"),
 
-    url(r'^password-change/$', auth_views.password_change,
-        {'template_name': 'court_registration/password_change_form.html',
-         'password_change_form': CourtAdminPasswordChangeForm},
-        name='password_change'),
+    url(r"^forgotten-username/$", UsernameReminderView.as_view(),
+        name="forgotten_username"),
+    url(r"^forgotten-username/done/$", TemplateView.as_view(template_name="profile/forgotten_username_done.html"),
+        name="forgotten_username_done"),
 
-    url(r'^password-change/done/$', auth_views.password_change_done,
-        {'template_name': 'court_registration/password_change_done.html'},
-        name='password_change_done'),
-
-    url(r'^password-reset/$', auth_views.password_reset,
-        {'template_name': 'court_registration/password_reset_form.html',
-         'password_reset_form': CourtAdminPasswordResetForm,
-         'email_template_name': 'emails/password_reset_email.html',
-         'subject_template_name': 'emails/password_reset_subject.txt'},
-        name='password_reset'),
-
-    url(r'^password-reset/done/$', auth_views.password_reset_done,
-        {'template_name': 'court_registration/password_reset_done.html'},
-        name='password_reset_done'),
-
-    url(r'^reset/(?P<uidb64>[0-9A-Za-z_\-]+)/(?P<token>[0-9A-Za-z]{1,13}-[0-9A-Za-z]{1,20})/$',
+    url(r"^reset-password/(?P<uidb64>[0-9A-Za-z_\-]+)/(?P<token>[0-9A-Za-z]{1,13}-[0-9A-Za-z]{1,20})/$",
         auth_views.password_reset_confirm,
-        {'template_name': 'court_registration/password_reset_confirm.html'},
-        name='password_reset_confirm'),
+        {"template_name": "profile/password_reset_confirm.html"},
+        name="password_reset_confirm"),
+    url(r"^reset-password/done/$", auth_views.password_reset_complete,
+        {"template_name": "profile/password_reset_complete.html"},
+        name="password_reset_complete"),
 
-    url(r'^reset/done/$', auth_views.password_reset_complete,
-        {'template_name': 'court_registration/password_reset_complete.html'},
-        name='password_reset_complete'),
+    url(r"^settings/personal-details/$", PersonalDetailsView.as_view(), name="personal_details"),
+    url(r"^settings/personal-details/done/$", TemplateView.as_view(template_name="settings/personal_details_done.html"), name="personal_details_done"),
+    url(r"^settings/change-password/$", auth_views.password_change,
+        {"template_name": "settings/password_change.html",
+         "password_change_form": CourtAdminPasswordChangeForm},
+        name="password_change"),
+    url(r"^settings/change-password/done/$", auth_views.password_change_done,
+        {"template_name": "settings/password_change_done.html"},
+        name="password_change_done"),
 )

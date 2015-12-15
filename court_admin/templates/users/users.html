@@ -1,0 +1,68 @@
+{% extends "base_court_admin_dashboard.html" %}
+
+{% load i18n %}
+
+{% block page_title %}{% blocktrans %}Users{% endblocktrans %} - {{ block.super }}{% endblock %}
+
+{% block dash_title %}Users{% endblock %}
+
+{% block tabs_nav %}
+<nav class="tabs-menu">
+    <ul>
+        <li><a class="active" href="{% url "users" %}">{% blocktrans %}All users{% endblocktrans %}</a></li>
+        <li><a href="{% url "invite_user" %}">{% blocktrans %}Invite user{% endblocktrans %}</a></li>
+    </ul>
+</nav>
+{% endblock tabs_nav %}
+
+{% block dash_content %}
+
+    <h2>Court users</h2>
+
+    {% if users %}
+    <table>
+        <tr>
+            <th>username</th>
+            <th>email</th>
+            <th>name</th>
+            <th>active?</th>
+            <th>court/region</th>
+            <th></th>
+        </tr>
+        {% for user in users %}
+
+        <tr>
+            <td>{% if user.is_active %}{{ user.username }}{% else %}PENDING INVITE{% endif %}</td>
+            <td>{{ user.email }}</td>
+            <td>{{ user.get_full_name }}</td>
+            <td>{{ user.is_active|yesno }}</td>
+            <td>{{ user.courtadminprofile.court.court_name }}</td>
+            <td>
+                {% if not user.is_active %}
+                <form method="post" action="{{ request.path }}">{% csrf_token %}
+                    <input type="hidden" name="id" value="{{ user.id }}">
+                    <input type="hidden" name="action" value="resend">
+                    <button>Resend invite</button>
+                </form>
+                <form method="post" action="{{ request.path }}">{% csrf_token %}
+                    <input type="hidden" name="id" value="{{ user.id }}">
+                    <input type="hidden" name="action" value="delete">
+                    <button>Delete invite</button>
+                </form>
+                {% else %}
+                    <button>Edit user</button>
+                {% endif %}
+            </td>
+        </tr>
+        {% endfor %}
+    </table>
+
+    {% else %}
+
+        <p>There are currently no court users.</p>
+
+        <p><a class="button" href="{% url "invite_user" %}">Invite a user</a></p>
+
+    {% endif %}
+
+{% endblock %}

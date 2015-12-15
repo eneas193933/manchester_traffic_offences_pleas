@@ -4,13 +4,13 @@
 {% load form_widgets %}
 {% load widget_tweaks %}
 
-{% block page_title %}{% blocktrans %}Login{% endblocktrans %} - {{ block.super }}{% endblock %}
+{% block page_title %}{% blocktrans %}Sign in{% endblocktrans %} - {{ block.super }}{% endblock %}
 
 {% block page_content %}
 
     {% if form.error_messages.invalid_login in form.non_field_errors %}
     <section class="error-summary" role="alert">
-        <h1 class="heading-medium">{% blocktrans %}Your login details have not been recognised{% endblocktrans %}</h1>
+        <h1 class="heading-medium">{% blocktrans %}Your sign in details have not been recognised{% endblocktrans %}</h1>
         <p>{% blocktrans %}Please try again.{% endblocktrans %}</p>
         <p><a href="{% url 'password_reset' %}">{% blocktrans %}Forgotten password?{% endblocktrans %}</a></p>
     </section>
@@ -33,12 +33,12 @@
     {% if next and user.is_authenticated %}
     <section class="error-summary" role="alert">
         <h1 class="heading-medium">{% blocktrans %}Your account doesn't have access to this page{% endblocktrans %}</h1>
-        <p>{% blocktrans %}To proceed, please login with an account that has access.{% endblocktrans %}</p>
+        <p>{% blocktrans %}To proceed, please sign in with an account that has access.{% endblocktrans %}</p>
     </section>
     {% endif %}
 
     <header class="content-header">
-        <h1>{% blocktrans %}Login{% endblocktrans %}</h1>
+        <h1>{% blocktrans %}Sign in{% endblocktrans %}</h1>
     </header>
 
 
@@ -56,6 +56,7 @@
 
     </form>
 
-    <p><a href="{% url 'password_reset' %}">Forgotten password?</a></p>
+    <p><a href="{% url 'password_reset' %}">Forgotten password?</a><br>
+        <a href="{% url 'forgotten_username' %}">Forgotten username?</a></p>
 
 {% endblock %}

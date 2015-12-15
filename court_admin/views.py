@@ -1,4 +1,9 @@
+import calendar
+import datetime as dt
+
 from django.core.exceptions import PermissionDenied
+from django.core.urlresolvers import reverse
+from django.db.models import Sum
 from django.shortcuts import redirect
 from django.views.generic import TemplateView, FormView
 from django.forms.models import modelformset_factory
@@ -8,13 +13,64 @@ from django.contrib.auth.models import User, Permission
 
 from apps.plea.models import Court, UsageStats
 from court_admin.decorators import court_staff_user_required, court_admin_user_required
-from court_admin.forms import InviteUserForm, EmailNotAvailable, RegistrationForm
+from court_admin.forms import (InviteUserForm,
+                               EmailNotAvailable,
+                               RegistrationForm,
+                               PersonalDetailsForm,
+                               UsernameReminderForm)
 
 
-class UsageStatsView(TemplateView):
-    template_name = "usage_data.html"
+class PersonalDetailsView(FormView):
+    template_name = "settings/personal_details.html"
+    form_class = PersonalDetailsForm
 
-    def _get_formset(self, court, *args, **kwargs):
+    @method_decorator(court_staff_user_required)
+    def dispatch(self, *args, **kwargs):
+        return super(PersonalDetailsView, self).dispatch(*args, **kwargs)
+
+
+class UsernameReminderView(FormView):
+    template_name = "profile/forgotten_username.html"
+    form_class = UsernameReminderForm
+
+    def form_valid(self, form):
+
+        self.success_url = reverse("forgotten_username_done")
+
+        try:
+            user = User.objects.get(email=form.data["email"], is_active=True)
+        except User.DoesNotExist:
+            pass
+
+        if user:
+            context = {
+                "host": self.request.get_host(),
+                "use_https": self.request.is_secure()
+            }
+            form.send_username_reminder_email(user, **context)
+
+        return super(UsernameReminderView, self).form_valid(form)
+
+
+class DashboardView(TemplateView):
+    template_name = "dashboard/overview.html"
+
+    def _get_date_filter(self, year, month):
+
+        _, last_date = calendar.monthrange(year, month)
+
+        return {
+            "start_date__gte": dt.date(year, month, 1),
+            "start_date__lte": dt.date(year, month, last_date)
+        }
+
+    def _get_formset(self, court, date_filter=None, *args, **kwargs):
+
+        if date_filter:
+            stats = UsageStats.objects.filter(**date_filter)
+        else:
+            stats = UsageStats.objects.all()
+
         usage_formset = modelformset_factory(
             UsageStats,
             fields=("postal_requisitions", "postal_guilty_pleas", "postal_not_guilty_pleas"),
@@ -22,12 +78,66 @@ class UsageStatsView(TemplateView):
 
         form_kwargs = {
             "initial": 0,
-            "queryset": UsageStats.objects.filter(court=court)
+            "queryset": stats
         }
 
         form_kwargs.update(kwargs)
 
         return usage_formset(*args, **form_kwargs)
+
+    def _get_month_list(self, court):
+
+        months = []
+
+        curr_date = court.live_date
+        today = dt.date.today()
+
+        while curr_date < today:
+
+            months.append(
+                [
+                    "{}/{}".format(curr_date.month, curr_date.year),
+                    curr_date.strftime("%B %Y")
+                ])
+
+            year, month, day = curr_date.year, curr_date.month + 1, curr_date.day
+
+            if month > 12:
+                year += 1
+                month %= 12
+
+            curr_date = dt.date(year, month, day)
+
+        return months
+
+    def _get_totals(self, court, date_filter=None):
+
+        if date_filter:
+            stats = UsageStats.objects.filter(**date_filter)
+        else:
+            stats = UsageStats.objects.all()
+
+        stats = stats.filter(court=court)
+
+        totals = stats.aggregate(Sum("postal_responses"),
+                                 Sum("postal_guilty_pleas"),
+                                 Sum("postal_not_guilty_pleas"),
+                                 Sum("online_submissions"),
+                                 Sum("online_guilty_pleas"),
+                                 Sum("online_not_guilty_pleas"))
+
+        data = {"by_post": {"submissions": totals["postal_responses__sum"] or 0,
+                            "guilty": totals["postal_guilty_pleas__sum"] or 0,
+                            "not_guilty": totals["postal_not_guilty_pleas__sum"] or 0},
+                "online": {"submissions": totals["online_submissions__sum"] or 0,
+                           "guilty": totals["online_guilty_pleas__sum"] or 0,
+                           "not_guilty": totals["online_not_guilty_pleas__sum"] or 0}}
+
+        data.update({"totals": {"submissions": data["online"]["submissions"] + data["by_post"]["submissions"],
+                                "guilty": data["online"]["guilty"] + data["by_post"]["guilty"],
+                                "not_guilty": data["online"]["not_guilty"] + data["by_post"]["not_guilty"]}})
+
+        return data
 
     def get_selected_court(self, court_id=None):
 
@@ -55,31 +165,44 @@ class UsageStatsView(TemplateView):
 
         # the following would happen via a cron task to keep the dashboard updated
         # with online data
+
+        month, year = kwargs.get("month", None), kwargs.get("year", None)
+
+        if month and year:
+            date_filter = self._get_date_filter(int(year), int(month))
+        else:
+            date_filter = None
+
         court = self.get_selected_court(kwargs.get("court_id", None))
+        kwargs["date_list"] = self._get_month_list(court)
+
         UsageStats.objects.calculate_weekly_stats(court)
 
-        kwargs["formset"] = self._get_formset(court)
+        kwargs["formset"] = self._get_formset(court, date_filter=date_filter)
         kwargs["selected_court"] = court
+        kwargs["totals"] = self._get_totals(court, date_filter=date_filter)
 
-        return super(UsageStatsView, self).get(request, *args, **kwargs)
+        return super(DashboardView, self).get(request, *args, **kwargs)
 
     def post(self, request, *args, **kwargs):
 
         court = self.get_selected_court(kwargs.get("court_id", None))
+        kwargs["date_list"] = self._get_month_list(court)
 
         formset = self._get_formset(court, request.POST)
 
         if formset.is_valid():
             formset.save()
-            messages.info(request, "Court statistics have been updated.")
+            messages.success(request, "Court statistics have been updated.")
 
         kwargs["formset"] = formset
         kwargs["selected_court"] = court
+        kwargs["totals"] = self._get_totals(court)
 
-        return super(UsageStatsView, self).get(request, *args, **kwargs)
+        return super(DashboardView, self).get(request, *args, **kwargs)
 
     def get_context_data(self, **kwargs):
-        context = super(UsageStatsView, self).get_context_data(**kwargs)
+        context = super(DashboardView, self).get_context_data(**kwargs)
 
         context["courts"] = Court.objects.all()
 
@@ -87,11 +210,11 @@ class UsageStatsView(TemplateView):
 
     @method_decorator(court_staff_user_required)
     def dispatch(self, *args, **kwargs):
-        return super(UsageStatsView, self).dispatch(*args, **kwargs)
+        return super(DashboardView, self).dispatch(*args, **kwargs)
 
 
 class InviteUserView(FormView):
-    template_name = "court_registration/invite_user.html"
+    template_name = "users/invite_user.html"
     form_class = InviteUserForm
 
     def form_valid(self, form):
@@ -99,7 +222,7 @@ class InviteUserView(FormView):
         try:
             user = form.create_user_from_form(form)
         except EmailNotAvailable:
-            messages.error(self.request, "Error - a user with that email already exists.")
+            messages.error(self.request, "A user with that email already exists.")
 
             return self.render_to_response(self.get_context_data(form=form))
 
@@ -110,7 +233,7 @@ class InviteUserView(FormView):
                 "use_https": self.request.is_secure()
             }
             form.send_invite_email(user, **context)
-            messages.info(self.request, "An invitation has been sent to {}".format(user.email))
+            messages.success(self.request, "An invitation has been sent to {}".format(user.email))
 
         self.success_url = self.request.path
 
@@ -122,7 +245,7 @@ class InviteUserView(FormView):
 
 
 class RegisterView(TemplateView):
-    template_name = "court_registration/register.html"
+    template_name = "profile/register.html"
 
     def get(self, request, *args, **kwargs):
 
@@ -162,6 +285,7 @@ class RegisterView(TemplateView):
 
         form = RegistrationForm(request.POST)
 
+        kwargs["user"] = user
         kwargs["form"] = form
 
         if form.is_valid():
@@ -172,8 +296,8 @@ class RegisterView(TemplateView):
             return super(RegisterView, self).get(request, *args, **kwargs)
 
 
-class CourtAdminListView(TemplateView):
-    template_name = "court_user_list.html"
+class UsersView(TemplateView):
+    template_name = "users/users.html"
 
     def _get_users(self):
 
@@ -192,7 +316,7 @@ class CourtAdminListView(TemplateView):
 
         kwargs["users"] = self._get_users()
 
-        return super(CourtAdminListView, self).get(request, *args, **kwargs)
+        return super(UsersView, self).get(request, *args, **kwargs)
 
     def post(self, request, *args, **kwargs):
 
@@ -213,19 +337,19 @@ class CourtAdminListView(TemplateView):
                     "use_https": self.request.is_secure()
                 }
                 InviteUserForm.send_invite_email(user, **context)
-                messages.info(request, "Invite resent")
+                messages.success(request, "Invitation resent")
 
             return redirect(request.path)
 
         elif action == "delete":
             if self._can_modify_user(user):
                 user.delete()
-                messages.info(request, "Delete")
+                messages.success(request, "User deleted")
 
             return redirect(request.path)
 
-        return super(CourtAdminListView, self).get(request, *args, **kwargs)
+        return super(UsersView, self).get(request, *args, **kwargs)
 
     @method_decorator(court_admin_user_required)
     def dispatch(self, *args, **kwargs):
-        return super(CourtAdminListView, self).dispatch(*args, **kwargs)
+        return super(UsersView, self).dispatch(*args, **kwargs)
